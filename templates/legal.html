@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>運営者情報 / お問い合わせ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * { border-radius: 0 !important; }
+        body { background: #e0f2fe; padding: 20px; }
+        .container { background: white; padding: 30px; border: 2px solid #c0dce8; max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; border-bottom: 2px solid #7fc1e0; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #dde6ed; padding: 8px 12px; text-align: left; vertical-align: top; }
+        th { background: #f0f4f8; width: 30%; }
+        .back-link { display: inline-block; margin-top: 20px; color: #2a7a9e; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>運営者情報 / お問い合わせ</h1>
+
+        <table>
+            <tr>
+                <th>運営者</th>
+                <td>ラブドール検索運営局（屋号）</td>
+            </tr>
+            <tr>
+                <th>所在地</th>
+                <td>非公開（問い合わせはメールにて対応いたします）</td>
+            </tr>
+            <tr>
+                <th>メールアドレス</th>
+                <td>your-email@example.com</td>
+            </tr>
+            <tr>
+                <th>サイトURL</th>
+                <td>https://love-doll-search.onrender.com</td>
+            </tr>
+            <tr>
+                <th>お問い合わせ方法</th>
+                <td>メールにて受け付けています。返信は2営業日以内を目安に対応いたします。</td>
+            </tr>
+            <tr>
+                <th>アフィリエイトに関する表示</th>
+                <td>当サイトはアフィリエイトプログラムを利用しており、商品リンク経由での購入により運営者に報酬が発生する場合があります。</td>
+            </tr>
+        </table>
+
+        <a href="{{ url_for('search') }}" class="back-link">← 検索ページに戻る</a>
+    </div>
+    {% include 'footer.html' %}
+</body>
+</html>

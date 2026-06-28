@@ -1,0 +1,16 @@
+2026-06-28 12:10:47 | https://yourdoll.jp/product/aotumedoll-atd047-tpe-love-doll/ | Page.goto: net::ERR_NETWORK_CHANGED at https://yourdoll.jp/product/aotumedoll-atd047-tpe-love-doll/
+Call log:
+  - navigating to "https://yourdoll.jp/product/aotumedoll-atd047-tpe-love-doll/", waiting until "load"
+
+2026-06-28 16:32:00 | https://yourdoll.jp/product/funwest-fwd045-tpe-lovedoll/ | Page.goto: net::ERR_INTERNET_DISCONNECTED at https://yourdoll.jp/product/funwest-fwd045-tpe-lovedoll/
+Call log:
+  - navigating to "https://yourdoll.jp/product/funwest-fwd045-tpe-lovedoll/", waiting until "load"
+
+2026-06-28 16:32:02 | https://yourdoll.jp/product/irontech-doll-itd259-youmiko-153cm-real-love-doll/ | Page.goto: net::ERR_INTERNET_DISCONNECTED at https://yourdoll.jp/product/irontech-doll-itd259-youmiko-153cm-real-love-doll/
+Call log:
+  - navigating to "https://yourdoll.jp/product/irontech-doll-itd259-youmiko-153cm-real-love-doll/", waiting until "load"
+
+2026-06-28 16:32:06 | https://yourdoll.jp/product/esb056-rad-sayuri-148cm-silicon-love-doll-d/ | Page.goto: net::ERR_NETWORK_CHANGED at https://yourdoll.jp/product/esb056-rad-sayuri-148cm-silicon-love-doll-d/
+Call log:
+  - navigating to "https://yourdoll.jp/product/esb056-rad-sayuri-148cm-silicon-love-doll-d/", waiting until "load"
+

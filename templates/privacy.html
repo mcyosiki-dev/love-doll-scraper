@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プライバシーポリシー</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * { border-radius: 0 !important; }
+        body { background: #e0f2fe; padding: 20px; }
+        .container { background: white; padding: 30px; border: 2px solid #c0dce8; max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; border-bottom: 2px solid #7fc1e0; padding-bottom: 10px; }
+        h2 { font-size: 1.1rem; margin-top: 20px; }
+        .back-link { display: inline-block; margin-top: 20px; color: #2a7a9e; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>プライバシーポリシー</h1>
+
+        <h2>1. はじめに</h2>
+        <p>ラブドール検索（以下「当サイト」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。</p>
+
+        <h2>2. 収集する情報</h2>
+        <p>当サイトでは、以下の情報を収集することがあります。</p>
+        <ul>
+            <li>アクセスログ（IPアドレス、ブラウザ情報、アクセス日時など）</li>
+            <li>Cookie（検索条件の保持、広告配信のため）</li>
+            <li>ユーザーが入力した検索キーワード（保存はしません）</li>
+        </ul>
+
+        <h2>3. 情報の利用目的</h2>
+        <ul>
+            <li>サイト運営の改善・分析</li>
+            <li>広告配信（アフィリエイト広告）</li>
+            <li>ユーザーサポート</li>
+        </ul>
+
+        <h2>4. 第三者提供</h2>
+        <p>当サイトは、法律で定められた場合を除き、ユーザーの個人情報を第三者に提供することはありません。</p>
+
+        <h2>5. Cookieについて</h2>
+        <p>当サイトでは、検索条件の保存や広告配信のためにCookieを使用します。ブラウザの設定でCookieを無効にすることも可能ですが、一部の機能が利用できなくなる場合があります。</p>
+
+        <h2>6. お問い合わせ</h2>
+        <p>プライバシーポリシーに関するお問い合わせは、下記までお願いいたします。</p>
+        <p>メールアドレス：your-email@example.com</p>
+
+        <a href="{{ url_for('search') }}" class="back-link">← 検索ページに戻る</a>
+    </div>
+    {% include 'footer.html' %}
+</body>
+</html>
