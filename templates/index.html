@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ラブドール検索</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        /* 全体：水色基調 */
+        body {
+            background: linear-gradient(135deg, #e0f2fe 0%, #b8d4e8 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            padding-bottom: 120px;
+        }
+        .sidebar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(5px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 80, 120, 0.15);
+            padding: 25px 20px;
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+            border: 1px solid rgba(120, 180, 220, 0.3);
+        }
+        .sidebar h5 {
+            color: #1a4b6d;
+            font-weight: 700;
+            border-bottom: 3px solid #7fc1e0;
+            padding-bottom: 10px;
+        }
+        .filter-group {
+            margin-bottom: 1.8rem;
+        }
+        .filter-group label {
+            font-weight: 600;
+            color: #1a4b6d;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .filter-group .range-labels {
+            font-size: 0.85rem;
+            color: #2c6b8a;
+            font-weight: 700;
+        }
+        /* スライダー */
+        input[type="range"] {
+            width: 100%;
+            margin: 8px 0;
+            -webkit-appearance: none;
+            background: linear-gradient(to right, #7fc1e0, #3a8bb5);
+            height: 6px;
+            border-radius: 10px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #1a6b8a;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,60,100,0.3);
+            transition: 0.1s;
+            border: 2px solid white;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        .slider-value {
+            font-weight: 700;
+            color: #0a4b6a;
+            font-size: 1.1rem;
+            min-width: 45px;
+            display: inline-block;
+            text-align: center;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 0.8rem;
+        }
+        .checkbox-group .form-check {
+            margin-right: 0.2rem;
+        }
+        .form-check-input:checked {
+            background-color: #3a8bb5;
+            border-color: #3a8bb5;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4a9ec4, #2a7a9e);
+            border: none;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(42, 122, 158, 0.4);
+        }
+        .btn-secondary {
+            background: #c0dce8;
+            border: none;
+            color: #1a4b6d;
+            font-weight: 600;
+        }
+        .btn-secondary:hover {
+            background: #a8c8d8;
+        }
+
+        /* 結果カード（3段構成） */
+        .result-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,60,100,0.08);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            border-left: 6px solid #4a9ec4;
+            transition: 0.15s;
+        }
+        .result-card:hover {
+            box-shadow: 0 8px 28px rgba(0,60,100,0.15);
+            transform: translateY(-2px);
+        }
+        .row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .product-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #1a3b4d;
+        }
+        .product-price {
+            font-weight: 700;
+            color: #1a6b8a;
+            font-size: 1.1rem;
+        }
+        .product-url a {
+            color: #2a7a9e;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .product-url a:hover {
+            text-decoration: underline;
+        }
+
+        /* スペック表示（2段目と3段目） */
+        .spec-table {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 4px 20px;
+            margin-top: 8px;
+            padding-top: 10px;
+            border-top: 1px solid #e0ecf2;
+        }
+        .spec-item {
+            display: contents;
+        }
+        .spec-key {
+            font-weight: 500;
+            color: #4a6a7a;
+            text-align: right;
+            padding-right: 8px;
+        }
+        .spec-value {
+            font-weight: 600;
+            color: #1a3b4d;
+            text-align: left;
+        }
+        .spec-empty {
+            color: #aaa;
+            font-weight: 400;
+        }
+
+        .category-badge {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.7rem;
+            border-radius: 30px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .result-count {
+            font-weight: 700;
+            color: #1a4b6d;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                top: 0;
+                margin-bottom: 25px;
+            }
+            .spec-table {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row g-4">
+            <!-- サイドバー（約1/3幅） -->
+            <div class="col-lg-4 col-md-5">
+                <div class="sidebar">
+                    <h5><i class="bi bi-sliders2 me-2"></i>検索条件</h5>
+                    <form method="GET" action="/">
+
+                        <!-- キーワード -->
+                        <div class="filter-group">
+                            <label for="keyword" class="form-label">キーワード</label>
+                            <input type="text" class="form-control" id="keyword" name="keyword" value="{{ keyword }}" placeholder="商品名の一部">
+                        </div>
+
+                        <!-- 身長（スライダー） -->
+                        <div class="filter-group">
+                            <label>身長 (cm)</label>
+                            <div class="slider-row">
+                                <span class="slider-value" id="height_min_display">{{ height_min or height_min_val }}</span>
+                                <input type="range" name="height_min" min="{{ height_min_val }}" max="{{ height_max_val }}" step="1" 
+                                       value="{{ height_min or height_min_val }}" 
+                                       oninput="document.getElementById('height_min_display').textContent=this.value">
+                            </div>
+                            <div class="slider-row">
+                                <span class="slider-value" id="height_max_display">{{ height_max or height_max_val }}</span>
+                                <input type="range" name="height_max" min="{{ height_min_val }}" max="{{ height_max_val }}" step="1" 
+                                       value="{{ height_max or height_max_val }}" 
+                                       oninput="document.getElementById('height_max_display').textContent=this.value">
+                            </div>
+                        </div>
+
+                        <!-- 体重 -->
+                        <div class="filter-group">
+                            <label>体重 (kg)</label>
+                            <div class="slider-row">
+                                <span class="slider-value" id="weight_min_display">{{ weight_min or weight_min_val }}</span>
+                                <input type="range" name="weight_min" min="{{ weight_min_val }}" max="{{ weight_max_val }}" step="1" 
+                                       value="{{ weight_min or weight_min_val }}" 
+                                       oninput="document.getElementById('weight_min_display').textContent=this.value">
+                            </div>
+                            <div class="slider-row">
+                                <span class="slider-value" id="weight_max_display">{{ weight_max or weight_max_val }}</span>
+                                <input type="range" name="weight_max" min="{{ weight_min_val }}" max="{{ weight_max_val }}" step="1" 
+                                       value="{{ weight_max or weight_max_val }}" 
+                                       oninput="document.getElementById('weight_max_display').textContent=this.value">
+                            </div>
+                        </div>
+
+                        <!-- 肩幅 -->
+                        <div class="filter-group">
+                            <label>肩幅 (cm)</label>
+                            <div class="slider-row">
+                                <span class="slider-value" id="shoulder_min_display">{{ shoulder_min or shoulder_min_val }}</span>
+                                <input type="range" name="shoulder_min" min="{{ shoulder_min_val }}" max="{{ shoulder_max_val }}" step="1" 
+                                       value="{{ shoulder_min or shoulder_min_val }}" 
+                                       oninput="document.getElementById('shoulder_min_display').textContent=this.value">
+                            </div>
+                            <div class="slider-row">
+                                <span class="slider-value" id="shoulder_max_display">{{ shoulder_max or shoulder_max_val }}</span>
+                                <input type="range" name="shoulder_max" min="{{ shoulder_min_val }}" max="{{ shoulder_max_val }}" step="1" 
+                                       value="{{ shoulder_max or shoulder_max_val }}" 
+                                       oninput="document.getElementById('shoulder_max_display').textContent=this.value">
+                            </div>
+                        </div>
+
+                        <!-- 足のサイズ -->
+                        <div class="filter-group">
+                            <label>足のサイズ (cm)</label>
+                            <div class="slider-row">
+                                <span class="slider-value" id="foot_min_display">{{ foot_min or foot_min_val }}</span>
+                                <input type="range" name="foot_min" min="{{ foot_min_val }}" max="{{ foot_max_val }}" step="1" 
+                                       value="{{ foot_min or foot_min_val }}" 
+                                       oninput="document.getElementById('foot_min_display').textContent=this.value">
+                            </div>
+                            <div class="slider-row">
+                                <span class="slider-value" id="foot_max_display">{{ foot_max or foot_max_val }}</span>
+                                <input type="range" name="foot_max" min="{{ foot_min_val }}" max="{{ foot_max_val }}" step="1" 
+                                       value="{{ foot_max or foot_max_val }}" 
+                                       oninput="document.getElementById('foot_max_display').textContent=this.value">
+                            </div>
+                        </div>
+
+                        <!-- カップ数（A〜L 個別チェックボックス） -->
+                        <div class="filter-group">
+                            <label class="form-label">カップ数（個別）</label>
+                            <div class="checkbox-group">
+                                {% for cup in available_cups %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="cup" value="{{ cup }}" id="cup_{{ loop.index }}"
+                                        {% if cup in selected_cups %}checked{% endif %}>
+                                    <label class="form-check-label" for="cup_{{ loop.index }}">{{ cup }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Mカップ以上 -->
+                        <div class="filter-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="cup_m_or_more" id="cup_m_or_more" {% if cup_m_or_more %}checked{% endif %}>
+                                <label class="form-check-label" for="cup_m_or_more">
+                                    <strong>Mカップ以上</strong> (M, N, O...)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- カテゴリ -->
+                        <div class="filter-group">
+                            <label class="form-label">カテゴリ</label>
+                            <div class="checkbox-group">
+                                {% for cat in all_categories %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="category" value="{{ cat }}" id="cat_{{ loop.index }}"
+                                        {% if cat in selected_categories %}checked{% endif %}>
+                                    <label class="form-check-label" for="cat_{{ loop.index }}">{{ cat }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 材質 -->
+                        <div class="filter-group">
+                            <label class="form-label">材質</label>
+                            <div class="checkbox-group">
+                                {% for mat in all_materials %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="material" value="{{ mat }}" id="mat_{{ loop.index }}"
+                                        {% if mat in selected_materials %}checked{% endif %}>
+                                    <label class="form-check-label" for="mat_{{ loop.index }}">{{ mat }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mb-2"><i class="bi bi-search me-1"></i>検索</button>
+                        <a href="/" class="btn btn-secondary w-100"><i class="bi bi-arrow-counterclockwise me-1"></i>リセット</a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 結果表示（約2/3幅） -->
+            <div class="col-lg-8 col-md-7">
+                <div class="result-header">
+                    <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件</span>
+                    <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>下部余白確保済</span>
+                </div>
+
+                {% if results %}
+                    {% for row in results %}
+                    <div class="result-card">
+                        <!-- 1段目：商品名・価格・リンク -->
+                        <div class="row-top">
+                            <span class="product-name">{{ row.name }}</span>
+                            <span class="product-price">{{ row.price }}円</span>
+                            <span class="product-url"><a href="{{ row.url }}" target="_blank"><i class="bi bi-box-arrow-up-right"></i> 商品ページ</a></span>
+                        </div>
+                        <!-- 2段目・3段目：スペック（項目名と値） -->
+                        <div class="spec-table">
+                            <span class="spec-key">カテゴリ</span>
+                            <span class="spec-value">
+                                <span class="badge category-badge 
+                                    {% if row.category == '女性型' %}bg-danger
+                                    {% elif row.category == '男性型' %}bg-primary
+                                    {% elif row.category == 'トルソー' %}bg-success
+                                    {% elif row.category == 'オナホール' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ row.category }}
+                                </span>
+                            </span>
+                            <span class="spec-key">身長</span>
+                            <span class="spec-value">{{ row.height or '-' }}</span>
+                            <span class="spec-key">体重</span>
+                            <span class="spec-value">{{ row.weight or '-' }}</span>
+                            <span class="spec-key">肩幅</span>
+                            <span class="spec-value">{{ row.shoulder or '-' }}</span>
+                            <span class="spec-key">足のサイズ</span>
+                            <span class="spec-value">{{ row.foot or '-' }}</span>
+                            <span class="spec-key">カップ数</span>
+                            <span class="spec-value">{{ row.cup or '-' }}</span>
+                            <span class="spec-key">材質</span>
+                            <span class="spec-value">{{ row.material or '-' }}</span>
+                            <span class="spec-key">膣の深さ</span>
+                            <span class="spec-value">{{ row.vagina_depth or '-' }}</span>
+                            <span class="spec-key">アナルの深さ</span>
+                            <span class="spec-value">{{ row.anal_depth or '-' }}</span>
+                            <span class="spec-key">口の深さ</span>
+                            <span class="spec-value">{{ row.mouth_depth or '-' }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info text-center" role="alert">
+                        <i class="bi bi-search-heart me-2"></i>該当する商品がありません。
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
