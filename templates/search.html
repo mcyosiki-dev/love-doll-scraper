@@ -395,6 +395,15 @@
 
             <!-- 結果表示 -->
             <div class="col-lg-10 col-md-9">
+                <!-- ExoClick広告（年齢確認後のみ表示） -->
+                {% if show_ads %}
+                <div id="ad-slot-top" class="ad-container" style="min-height:90px; margin:12px 0;">
+                    <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+                    <ins class="eas6a97888e2" data-zoneid="5964958"></ins> 
+                    <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+                </div>
+                {% endif %}
+
                 <div class="result-header">
                     <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件</span>
                     <div class="sort-controls">
