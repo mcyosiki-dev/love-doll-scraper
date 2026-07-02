@@ -286,5 +286,10 @@ def search():
                            available_cups=available_cups,
                            sort_by=sort_by)
 
+# [JST 2026-07-02 14:00] 総括AI WebAIからの依頼によりExoClick検証ルート追加
+@app.route('/012d8cfd3eec704c72e046dfd2b72ee0.html')
+def verify_exoclick():
+    return "012d8cfd3eec704c72e046dfd2b72ee0"
+
 if __name__ == '__main__':
     app.run(debug=True)
