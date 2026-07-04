@@ -12,7 +12,7 @@
             background: linear-gradient(135deg, #e0f2fe 0%, #b8d4e8 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
-            padding-bottom: 120px;
+            padding-bottom: 70px;
         }
         .sidebar {
             background: rgba(255, 255, 255, 0.85);
@@ -247,6 +247,18 @@
             text-decoration: none;
         }
         .top-link:hover { text-decoration: underline; }
+
+        .footer.fixed-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            padding: 6px 0;
+            border-top: 1px solid #dee2e6;
+        }
 
         @media (max-width: 1200px) {
             .spec-keys, .spec-values { grid-template-columns: repeat(6, 1fr); }
@@ -489,4 +501,4 @@
     </div>
     {% include 'footer.html' %}
 </body>
-</html>"<!-- Force rebuild with actual file change -->" 
+</html>
