@@ -93,15 +93,6 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(42, 122, 158, 0.35);
         }
-        .btn-secondary {
-            background: #c0dce8;
-            border: none;
-            color: #1a4b6d;
-            font-weight: 600;
-            font-size: 0.8rem;
-            padding: 4px 10px;
-        }
-        .btn-secondary:hover { background: #a8c8d8; }
 
         .result-card {
             background: white;
@@ -241,24 +232,6 @@
             background: white;
             font-size: 0.8rem;
         }
-        .top-link {
-            font-size: 0.8rem;
-            color: #2a7a9e;
-            text-decoration: none;
-        }
-        .top-link:hover { text-decoration: underline; }
-
-        .footer.fixed-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            padding: 6px 0;
-            border-top: 1px solid #dee2e6;
-        }
 
         @media (max-width: 1200px) {
             .spec-keys, .spec-values { grid-template-columns: repeat(6, 1fr); }
@@ -280,7 +253,10 @@
             <div class="col-lg-2 col-md-3">
                 <div class="sidebar">
                     <h5><i class="bi bi-sliders2 me-1"></i>検索</h5>
+
+                    <!-- 検索ボタンを上部に移動 -->
                     <form method="GET" action="{{ url_for('search') }}">
+                        <button type="submit" class="btn btn-primary w-100 mb-3"><i class="bi bi-search me-1"></i>検索</button>
 
                         <div class="filter-group">
                             <label for="keyword" class="form-label">キーワード</label>
@@ -397,18 +373,13 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 mb-1"><i class="bi bi-search me-1"></i>検索</button>
-                        <a href="{{ url_for('search') }}" class="btn btn-secondary w-100"><i class="bi bi-arrow-counterclockwise me-1"></i>リセット</a>
+                        <!-- 検索ボタンは上部に移動済みのため、ここには何も置かない -->
                     </form>
-                    <hr class="my-2">
-                    <a href="{{ url_for('top') }}" class="top-link"><i class="bi bi-house me-1"></i>トップへ戻る</a>
                 </div>
             </div>
 
             <!-- 結果表示 -->
             <div class="col-lg-10 col-md-9">
-                <!-- ★ 広告ブロックを完全に削除しました（フッターに移動済み） -->
-
                 <div class="result-header">
                     <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件</span>
                     <div class="sort-controls">
