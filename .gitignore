@@ -12,3 +12,4 @@ check_*.py
 migrate_*.py 
 remove_*.py 
 app_backup.py 
+dolls.db 
