@@ -1,17 +1,7 @@
 <footer class="footer fixed-bottom" style="background: transparent; backdrop-filter: none; border: none; box-shadow: none; padding: 2px 0; font-size: 0.5rem; z-index: 1030; min-height: auto;">
     <div class="container-fluid">
         <div class="row align-items-center" style="margin: 0;">
-            <!-- 左：法的表記 -->
-            <div class="col-12 col-md-5 text-center text-md-start" style="font-size: 0.5rem; line-height: 1.2; padding: 1px 0; color: rgba(50,70,90,0.6);">
-                <span>当サイトはアフィリエイト広告を利用しています。</span>
-                <span class="mx-1">｜</span>
-                <a href="{{ url_for('legal') }}" class="text-decoration-none" style="color: rgba(42,122,158,0.7);">特定商取引法</a>
-                <span class="mx-1">｜</span>
-                <a href="{{ url_for('privacy') }}" class="text-decoration-none" style="color: rgba(42,122,158,0.7);">プライバシーポリシー</a>
-            </div>
-
-            <!-- 右：広告（年齢確認後のみ表示） -->
-            <div class="col-12 col-md-7 text-center text-md-end" style="padding: 1px 0; min-height: auto;">
+            <div class="col-12 text-center" style="padding: 1px 0; min-height: auto;">
                 {% if session.get('age_verified') %}
                     <div id="ad-slot-bottom" style="display: block; max-width: 100%; text-align: center; background: transparent; border: none; box-shadow: none;">
                         <script src="https://adm.shinobi.jp/s/f09ef3b5301cad6c264dd7e06ac36d0b"></script>
