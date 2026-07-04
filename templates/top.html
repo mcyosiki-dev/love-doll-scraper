@@ -17,7 +17,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 20px;
-            padding-bottom: 80px;
+            padding-bottom: 50px; /* フッター分の余白を縮小 */
         }
         .age-verify-container {
             background: rgba(255, 255, 255, 0.92);
@@ -74,6 +74,32 @@
         .btn-age-no:hover {
             background: #a8c8d8;
         }
+
+        /* 専用フッター（広告なし） */
+        .footer-top {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(224, 242, 254, 0.85);
+            backdrop-filter: blur(2px);
+            padding: 3px 0;
+            font-size: 0.55rem;
+            text-align: center;
+            color: #4a6a7a;
+            border: none;
+            z-index: 1030;
+        }
+        .footer-top a {
+            color: #2a7a9e;
+            text-decoration: none;
+        }
+        .footer-top a:hover {
+            text-decoration: underline;
+        }
+        .footer-top span {
+            margin: 0 4px;
+        }
     </style>
 </head>
 <body>
@@ -88,6 +114,13 @@
         </form>
     </div>
 
-    {% include 'footer.html' %}
+    <!-- 専用フッター（広告なし・法的表記のみ） -->
+    <div class="footer-top">
+        <span>当サイトはアフィリエイト広告を利用しています。</span>
+        <span>｜</span>
+        <a href="{{ url_for('legal') }}">特定商取引法</a>
+        <span>｜</span>
+        <a href="{{ url_for('privacy') }}">プライバシーポリシー</a>
+    </div>
 </body>
 </html>
