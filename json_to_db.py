@@ -10,6 +10,23 @@ def extract_num(val):
         return float(match.group(1))
     return None
 
+# ★ 材質正規化マッピング（追加）
+MATERIAL_MAPPING = {
+    'シリコーン': 'シリコン',
+    'Silicon': 'シリコン',
+    'silicon': 'シリコン',
+    'Silicone': 'シリコン',
+    'silicone': 'シリコン',
+    'シリコン製': 'シリコン',
+    'Tpe': 'TPE',
+    'tpe': 'TPE',
+    'TPE製': 'TPE',
+    'シリコン＋TPE': 'シリコン/TPE',
+    'シリコン＆TPE': 'シリコン/TPE',
+    'シリコン+TPE': 'シリコン/TPE',
+    'シリコン&TPE': 'シリコン/TPE',
+}
+
 with open('all_data.json', 'r', encoding='utf-8') as f:
     products = json.load(f)
 
@@ -55,12 +72,18 @@ for product in products:
 
     for variant in variants:
         category = variant.get('大分類', '不明')
-        
-        # ★【2026-07-04 修正】フォールバックマッピング：高さ→身長、重さ→体重
+
+        # ★ 材質を正規化（追加）
+        if '材質' in variant:
+            raw_material = variant['材質']
+            if raw_material in MATERIAL_MAPPING:
+                variant['材質'] = MATERIAL_MAPPING[raw_material]
+
+        # ★ フォールバックマッピング：高さ→身長、重さ→体重
         height_raw = variant.get('身長') or variant.get('高さ')
         weight_raw = variant.get('体重') or variant.get('重さ')
         foot_raw = variant.get('足のサイズ') or variant.get('足サイズ')
-        
+
         height_cm = extract_num(height_raw)
         weight_kg = extract_num(weight_raw)
         foot_cm = extract_num(foot_raw)
