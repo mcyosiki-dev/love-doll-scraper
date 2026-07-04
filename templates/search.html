@@ -3,497 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ラブドール検索</title>
+    <title>年齢確認｜ラブドール検索</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         * { border-radius: 0 !important; }
         body {
             background: linear-gradient(135deg, #e0f2fe 0%, #b8d4e8 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-            padding-bottom: 70px;
-        }
-        .sidebar {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(5px);
-            box-shadow: 0 8px 32px rgba(0, 80, 120, 0.12);
-            padding: 15px 12px;
-            position: sticky;
-            top: 20px;
-            height: fit-content;
-            border: 1px solid rgba(120, 180, 220, 0.25);
-            font-size: 0.8rem;
-        }
-        .sidebar h5 {
-            color: #1a4b6d;
-            font-weight: 700;
-            font-size: 1rem;
-            border-bottom: 2px solid #7fc1e0;
-            padding-bottom: 6px;
-        }
-        .filter-group { margin-bottom: 1rem; }
-        .filter-group label {
-            font-weight: 600;
-            color: #1a4b6d;
-            font-size: 0.75rem;
+            min-height: 100vh;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            padding-bottom: 35px;
         }
-        .filter-group .form-control { font-size: 0.75rem; padding: 2px 6px; }
-        input[type="range"] {
+        .age-verify-container {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 8px 32px rgba(0, 80, 120, 0.15);
+            padding: 40px 30px;
+            max-width: 500px;
             width: 100%;
-            margin: 2px 0;
-            -webkit-appearance: none;
-            background: linear-gradient(to right, #7fc1e0, #3a8bb5);
-            height: 4px;
-            outline: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            background: #1a6b8a;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,60,100,0.2);
-            border: 2px solid white;
-        }
-        .slider-value {
-            font-weight: 700;
-            color: #0a4b6a;
-            font-size: 0.8rem;
-            min-width: 30px;
-            display: inline-block;
+            border: 1px solid rgba(120, 180, 220, 0.3);
             text-align: center;
         }
-        .slider-row {
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .age-verify-container h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a4b6d;
+            margin-bottom: 10px;
         }
-        .slider-row input[type="range"] { flex: 1; }
-        .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.2rem 0.4rem;
+        .age-verify-container .icon {
+            font-size: 4rem;
+            color: #1a6b8a;
+            margin-bottom: 20px;
         }
-        .checkbox-group .form-check { font-size: 0.7rem; }
-        .form-check-input { width: 12px; height: 12px; }
-        .form-check-input:checked { background-color: #3a8bb5; border-color: #3a8bb5; }
-        .btn-primary {
-            background: linear-gradient(135deg, #4a9ec4, #2a7a9e);
+        .age-verify-container p {
+            font-size: 1.1rem;
+            color: #4a3a3a;
+            margin-bottom: 30px;
+        }
+        .btn-age-yes {
+            background: #4a9ec4;
             border: none;
+            padding: 12px 40px;
+            font-size: 1.2rem;
             font-weight: 600;
-            font-size: 0.8rem;
-            padding: 4px 10px;
+            color: white;
             transition: 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
         }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(42, 122, 158, 0.35);
+        .btn-age-yes:hover {
+            background: #2a7a9e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(42, 122, 158, 0.4);
         }
-        .btn-secondary {
+        .btn-age-no {
             background: #c0dce8;
             border: none;
-            color: #1a4b6d;
-            font-weight: 600;
-            font-size: 0.8rem;
-            padding: 4px 10px;
-        }
-        .btn-secondary:hover { background: #a8c8d8; }
-
-        .result-card {
-            background: white;
-            border: 2px solid #c0dce8;
-            box-shadow: 0 2px 8px rgba(0,60,100,0.06);
-            padding: 12px 16px;
-            margin-bottom: 12px;
-            transition: 0.15s;
-        }
-        .result-card:hover {
-            border-color: #4a9ec4;
-            box-shadow: 0 6px 20px rgba(0,60,100,0.1);
-        }
-
-        .row-top {
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 6px 12px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eef5f8;
-        }
-        .tag-category {
-            font-size: 0.75rem;
-            padding: 2px 10px;
-            color: white;
-            font-weight: 600;
-        }
-        .tag-material {
-            font-size: 0.75rem;
-            padding: 2px 10px;
-            background: #6c757d;
-            color: white;
-            font-weight: 600;
-        }
-        .product-name {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: #1a3b4d;
-        }
-        .product-price {
-            font-weight: 700;
-            font-size: 1.0rem;
-            color: #dc3545;
-        }
-        .site-link-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-left: auto;
-        }
-        .product-site {
-            font-weight: 500;
-            color: #2a7a9e;
-            font-size: 0.8rem;
-            background: #e0f2fe;
-            padding: 0 6px;
-        }
-        .product-url a {
-            color: #2a7a9e;
-            text-decoration: none;
-            font-size: 0.8rem;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-        .product-url a:hover { text-decoration: underline; }
-
-        .spec-keys {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 4px;
-            margin-top: 10px;
-        }
-        .spec-keys .cell {
-            background: #f0f4f8;
-            border: 1px solid #dde6ed;
-            padding: 4px 6px;
-            text-align: center;
-            font-weight: 500;
-            color: #4a6a7a;
-            font-size: 0.75rem;
-            min-height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .spec-values {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 4px;
-            margin-top: 2px;
-        }
-        .spec-values .cell {
-            background: #f8fafc;
-            border: 1px solid #dde6ed;
-            padding: 4px 6px;
-            text-align: center;
-            font-weight: 600;
-            color: #1a3b4d;
-            font-size: 0.75rem;
-            min-height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .result-count {
-            font-weight: 700;
-            color: #1a4b6d;
-            font-size: 1rem;
-        }
-        .sort-controls {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .sort-controls label {
+            padding: 12px 40px;
+            font-size: 1.2rem;
             font-weight: 600;
             color: #1a4b6d;
-            font-size: 0.8rem;
-            margin: 0;
+            transition: 0.2s;
+            width: 100%;
         }
-        .sort-controls select {
-            padding: 2px 6px;
-            border: 1px solid #c0dce8;
-            background: white;
-            font-size: 0.8rem;
+        .btn-age-no:hover {
+            background: #a8c8d8;
         }
-        .top-link {
-            font-size: 0.8rem;
-            color: #2a7a9e;
-            text-decoration: none;
-        }
-        .top-link:hover { text-decoration: underline; }
 
-        .footer.fixed-bottom {
+        /* 専用フッター（完全透過・広告なし） */
+        .footer-top {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            padding: 6px 0;
-            border-top: 1px solid #dee2e6;
+            background: transparent;
+            backdrop-filter: none;
+            border: none;
+            box-shadow: none;
+            padding: 2px 0;
+            font-size: 0.5rem;
+            text-align: center;
+            color: rgba(50,70,90,0.6);
+            z-index: 1030;
+            pointer-events: none;
         }
-
-        @media (max-width: 1200px) {
-            .spec-keys, .spec-values { grid-template-columns: repeat(6, 1fr); }
+        .footer-top a {
+            color: rgba(42,122,158,0.7);
+            text-decoration: none;
+            pointer-events: auto;
         }
-        @media (max-width: 768px) {
-            .spec-keys, .spec-values { grid-template-columns: repeat(4, 1fr); }
-            .row-top { gap: 4px 8px; }
-            .site-link-group { margin-left: 0; width: 100%; justify-content: flex-end; }
+        .footer-top a:hover {
+            text-decoration: underline;
         }
-        @media (max-width: 480px) {
-            .spec-keys, .spec-values { grid-template-columns: repeat(2, 1fr); }
+        .footer-top span {
+            margin: 0 3px;
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row g-3">
-            <!-- サイドバー -->
-            <div class="col-lg-2 col-md-3">
-                <div class="sidebar">
-                    <h5><i class="bi bi-sliders2 me-1"></i>検索</h5>
-                    <form method="GET" action="{{ url_for('search') }}">
+    <div class="age-verify-container">
+        <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
+        <h1>年齢確認</h1>
+        <p>このサイトは18歳以上の方を対象としています。<br>あなたは18歳以上ですか？</p>
 
-                        <div class="filter-group">
-                            <label for="keyword" class="form-label">キーワード</label>
-                            <input type="text" class="form-control form-control-sm" id="keyword" name="keyword" value="{{ keyword }}" placeholder="商品名">
-                        </div>
-
-                        <div class="filter-group">
-                            <label>身長 (cm)</label>
-                            <div class="slider-row">
-                                <span class="slider-value" id="h_min_d">{{ height_min or height_min_val }}</span>
-                                <input type="range" name="height_min" min="{{ height_min_val }}" max="{{ height_max_val }}" step="1" 
-                                       value="{{ height_min or height_min_val }}" 
-                                       oninput="document.getElementById('h_min_d').textContent=this.value">
-                            </div>
-                            <div class="slider-row">
-                                <span class="slider-value" id="h_max_d">{{ height_max or height_max_val }}</span>
-                                <input type="range" name="height_max" min="{{ height_min_val }}" max="{{ height_max_val }}" step="1" 
-                                       value="{{ height_max or height_max_val }}" 
-                                       oninput="document.getElementById('h_max_d').textContent=this.value">
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <label>体重 (kg)</label>
-                            <div class="slider-row">
-                                <span class="slider-value" id="w_min_d">{{ weight_min or weight_min_val }}</span>
-                                <input type="range" name="weight_min" min="{{ weight_min_val }}" max="{{ weight_max_val }}" step="1" 
-                                       value="{{ weight_min or weight_min_val }}" 
-                                       oninput="document.getElementById('w_min_d').textContent=this.value">
-                            </div>
-                            <div class="slider-row">
-                                <span class="slider-value" id="w_max_d">{{ weight_max or weight_max_val }}</span>
-                                <input type="range" name="weight_max" min="{{ weight_min_val }}" max="{{ weight_max_val }}" step="1" 
-                                       value="{{ weight_max or weight_max_val }}" 
-                                       oninput="document.getElementById('w_max_d').textContent=this.value">
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <label>足サイズ (cm)</label>
-                            <div class="slider-row">
-                                <span class="slider-value" id="f_min_d">{{ foot_min or foot_min_val }}</span>
-                                <input type="range" name="foot_min" min="{{ foot_min_val }}" max="{{ foot_max_val }}" step="1" 
-                                       value="{{ foot_min or foot_min_val }}" 
-                                       oninput="document.getElementById('f_min_d').textContent=this.value">
-                            </div>
-                            <div class="slider-row">
-                                <span class="slider-value" id="f_max_d">{{ foot_max or foot_max_val }}</span>
-                                <input type="range" name="foot_max" min="{{ foot_min_val }}" max="{{ foot_max_val }}" step="1" 
-                                       value="{{ foot_max or foot_max_val }}" 
-                                       oninput="document.getElementById('f_max_d').textContent=this.value">
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <label>価格 (円)</label>
-                            <div class="slider-row">
-                                <span class="slider-value" id="p_min_d">{{ price_min or price_min_val }}</span>
-                                <input type="range" name="price_min" min="{{ price_min_val }}" max="{{ price_max_val }}" step="1000" 
-                                       value="{{ price_min or price_min_val }}" 
-                                       oninput="document.getElementById('p_min_d').textContent=this.value">
-                            </div>
-                            <div class="slider-row">
-                                <span class="slider-value" id="p_max_d">{{ price_max or price_max_val }}</span>
-                                <input type="range" name="price_max" min="{{ price_min_val }}" max="{{ price_max_val }}" step="1000" 
-                                       value="{{ price_max or price_max_val }}" 
-                                       oninput="document.getElementById('p_max_d').textContent=this.value">
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="form-label">カップ数 (AA〜L)</label>
-                            <div class="checkbox-group">
-                                {% for cup in available_cups %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="cup" value="{{ cup }}" id="cup_{{ loop.index }}"
-                                        {% if cup in selected_cups %}checked{% endif %}>
-                                    <label class="form-check-label" for="cup_{{ loop.index }}">{{ cup }}</label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="cup_m_or_more" id="cup_m_or_more" {% if cup_m_or_more %}checked{% endif %}>
-                                <label class="form-check-label" for="cup_m_or_more"><strong>M以上</strong></label>
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="form-label">カテゴリ</label>
-                            <div class="checkbox-group">
-                                {% for cat in all_categories %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="category" value="{{ cat }}" id="cat_{{ loop.index }}"
-                                        {% if cat in selected_categories %}checked{% endif %}>
-                                    <label class="form-check-label" for="cat_{{ loop.index }}">{{ cat }}</label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="form-label">材質</label>
-                            <div class="checkbox-group">
-                                {% for mat in all_materials %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="material" value="{{ mat }}" id="mat_{{ loop.index }}"
-                                        {% if mat in selected_materials %}checked{% endif %}>
-                                    <label class="form-check-label" for="mat_{{ loop.index }}">{{ mat }}</label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100 mb-1"><i class="bi bi-search me-1"></i>検索</button>
-                        <a href="{{ url_for('search') }}" class="btn btn-secondary w-100"><i class="bi bi-arrow-counterclockwise me-1"></i>リセット</a>
-                    </form>
-                    <hr class="my-2">
-                    <a href="{{ url_for('top') }}" class="top-link"><i class="bi bi-house me-1"></i>トップへ戻る</a>
-                </div>
-            </div>
-
-            <!-- 結果表示 -->
-            <div class="col-lg-10 col-md-9">
-                <!-- ★ 広告ブロックを完全に削除しました（フッターに移動済み） -->
-
-                <div class="result-header">
-                    <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件</span>
-                    <div class="sort-controls">
-                        <label for="sortSelect"><i class="bi bi-arrow-up-down me-1"></i>並び替え</label>
-                        <select id="sortSelect" onchange="this.form.submit()" name="sort_by" form="searchForm">
-                            <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>価格が安い順</option>
-                            <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>価格が高い順</option>
-                            <option value="height_asc" {% if sort_by == 'height_asc' %}selected{% endif %}>身長が低い順</option>
-                            <option value="height_desc" {% if sort_by == 'height_desc' %}selected{% endif %}>身長が高い順</option>
-                            <option value="weight_asc" {% if sort_by == 'weight_asc' %}selected{% endif %}>体重が軽い順</option>
-                            <option value="weight_desc" {% if sort_by == 'weight_desc' %}selected{% endif %}>体重が重い順</option>
-                            <option value="bust_asc" {% if sort_by == 'bust_asc' %}selected{% endif %}>バストが小さい順</option>
-                            <option value="bust_desc" {% if sort_by == 'bust_desc' %}selected{% endif %}>バストが大きい順</option>
-                        </select>
-                    </div>
-                </div>
-
-                <form id="searchForm" method="GET" action="{{ url_for('search') }}" style="display:none;">
-                    {% for key, value in request.args.items() %}
-                        {% if key != 'sort_by' %}
-                            <input type="hidden" name="{{ key }}" value="{{ value }}">
-                        {% endif %}
-                    {% endfor %}
-                </form>
-
-                {% if results %}
-                    {% for row in results %}
-                    <div class="result-card">
-                        <div class="row-top">
-                            <span class="tag-category 
-                                {% if row.category == '女性型' %}bg-danger
-                                {% elif row.category == '男性型' %}bg-primary
-                                {% elif row.category == 'トルソー' %}bg-success
-                                {% elif row.category == 'オナホール' %}bg-warning text-dark
-                                {% else %}bg-secondary{% endif %}">
-                                {{ row.category }}
-                            </span>
-                            <span class="tag-material">{{ row.material or '不明' }}</span>
-                            <span class="product-name">{{ row.name }}</span>
-                            <span class="product-price">{{ row.price }}円</span>
-                            <span class="site-link-group">
-                                <span class="product-site">{{ row.site_name }}</span>
-                                <span class="product-url"><a href="{{ row.url }}" target="_blank"><i class="bi bi-box-arrow-up-right"></i> 商品ページ</a></span>
-                            </span>
-                        </div>
-
-                        <div class="spec-keys">
-                            <div class="cell">身長</div>
-                            <div class="cell">体重</div>
-                            <div class="cell">カップ数</div>
-                            <div class="cell">バスト</div>
-                            <div class="cell">アンダーバスト</div>
-                            <div class="cell">ウエスト</div>
-                            <div class="cell">ヒップ</div>
-                            <div class="cell">肩幅</div>
-                            <div class="cell">足サイズ</div>
-                            <div class="cell">膣の深さ</div>
-                            <div class="cell">アナルの深さ</div>
-                            <div class="cell">口の深さ</div>
-                        </div>
-
-                        <div class="spec-values">
-                            <div class="cell">{{ row.height or '-' }}</div>
-                            <div class="cell">{{ row.weight or '-' }}</div>
-                            <div class="cell">{{ row.cup or '-' }}</div>
-                            <div class="cell">{{ row.bust or '-' }}</div>
-                            <div class="cell">{{ row.under_bust or '-' }}</div>
-                            <div class="cell">{{ row.waist or '-' }}</div>
-                            <div class="cell">{{ row.hip or '-' }}</div>
-                            <div class="cell">{{ row.shoulder or '-' }}</div>
-                            <div class="cell">{{ row.foot or '-' }}</div>
-                            <div class="cell">{{ row.vagina_depth or '-' }}</div>
-                            <div class="cell">{{ row.anal_depth or '-' }}</div>
-                            <div class="cell">{{ row.mouth_depth or '-' }}</div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="alert alert-info text-center" role="alert">
-                        <i class="bi bi-search-heart me-2"></i>該当する商品がありません。
-                    </div>
-                {% endif %}
-            </div>
-        </div>
+        <form method="POST" action="{{ url_for('age_verify') }}">
+            <button type="submit" name="age_confirm" value="yes" class="btn-age-yes"><i class="bi bi-check-circle me-2"></i>はい、18歳以上です</button>
+            <button type="submit" name="age_confirm" value="no" class="btn-age-no"><i class="bi bi-x-circle me-2"></i>いいえ、18歳未満です</button>
+        </form>
     </div>
-    {% include 'footer.html' %}
+
+    <!-- 専用フッター（完全透過） -->
+    <div class="footer-top">
+        <span>当サイトはアフィリエイト広告を利用しています。</span>
+        <span>｜</span>
+        <a href="{{ url_for('legal') }}">特定商取引法</a>
+        <span>｜</span>
+        <a href="{{ url_for('privacy') }}">プライバシーポリシー</a>
+    </div>
 </body>
 </html>
