@@ -407,12 +407,7 @@
 
             <!-- 結果表示 -->
             <div class="col-lg-10 col-md-9">
-                <!-- 忍者AdMax広告（年齢確認後のみ表示） -->
-                {% if session.get('age_verified') %}
-                <div id="ad-slot-top" class="ad-container" style="min-height:90px; margin:12px 0;">
-                    <script src="https://adm.shinobi.jp/s/f09ef3b5301cad6c264dd7e06ac36d0b"></script>
-                </div>
-                {% endif %}
+                <!-- ★ 広告ブロックを完全に削除しました（フッターに移動済み） -->
 
                 <div class="result-header">
                     <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件</span>

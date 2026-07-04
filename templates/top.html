@@ -17,6 +17,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 20px;
+            padding-bottom: 80px;
         }
         .age-verify-container {
             background: rgba(255, 255, 255, 0.92);
@@ -73,18 +74,6 @@
         .btn-age-no:hover {
             background: #a8c8d8;
         }
-        .legal-note {
-            margin-top: 25px;
-            font-size: 0.75rem;
-            color: #6c757d;
-        }
-        .legal-note a {
-            color: #2a7a9e;
-            text-decoration: none;
-        }
-        .legal-note a:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
@@ -97,11 +86,8 @@
             <button type="submit" name="age_confirm" value="yes" class="btn-age-yes"><i class="bi bi-check-circle me-2"></i>はい、18歳以上です</button>
             <button type="submit" name="age_confirm" value="no" class="btn-age-no"><i class="bi bi-x-circle me-2"></i>いいえ、18歳未満です</button>
         </form>
-
-        <div class="legal-note">
-            <p>当サイトはアフィリエイト広告を利用しています。<br>
-            <a href="{{ url_for('legal') }}">特定商取引法</a> ｜ <a href="{{ url_for('privacy') }}">プライバシーポリシー</a></p>
-        </div>
     </div>
+
+    {% include 'footer.html' %}
 </body>
 </html>
