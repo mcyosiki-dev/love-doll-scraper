@@ -29,6 +29,11 @@ def create_indexes():
     c.execute('CREATE INDEX IF NOT EXISTS idx_products_id ON products(id)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_specs_product_id ON specs(product_id)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_specs_key ON specs(spec_key)')
+    # ★ 数値カラム用インデックス
+    c.execute('CREATE INDEX IF NOT EXISTS idx_products_height_cm ON products(height_cm)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_products_weight_kg ON products(weight_kg)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_products_foot_cm ON products(foot_cm)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_products_price_int ON products(price_int)')
     conn.commit()
     conn.close()
 
@@ -76,7 +81,7 @@ def legal():
 def privacy():
     return render_template('privacy.html')
 
-# --- 検索（ページネーション＋JOIN最適化） ---
+# --- 検索（数値カラム対応版） ---
 @app.route('/search', methods=['GET'])
 def search():
     if not session.get('age_verified'):
@@ -103,19 +108,20 @@ def search():
     conn = get_db_connection()
     c = conn.cursor()
 
-    # ★ メインクエリ（JOIN + GROUP BY に書き換え）
+    # ★ メインクエリ（JOIN + GROUP BY、数値カラムを使用）
     query = '''
         SELECT 
             p.id, p.name, p.price, p.url, p.category,
-            MAX(CASE WHEN s.spec_key = '身長' THEN s.spec_value END) AS height,
-            MAX(CASE WHEN s.spec_key = '体重' THEN s.spec_value END) AS weight,
+            p.height_cm AS height,
+            p.weight_kg AS weight,
+            p.foot_cm AS foot,
+            p.price_int AS price_int,
             MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) AS cup,
             MAX(CASE WHEN s.spec_key = 'バスト' THEN s.spec_value END) AS bust,
             MAX(CASE WHEN s.spec_key = 'アンダーバスト' THEN s.spec_value END) AS under_bust,
             MAX(CASE WHEN s.spec_key = 'ウエスト' THEN s.spec_value END) AS waist,
             MAX(CASE WHEN s.spec_key = 'ヒップ' THEN s.spec_value END) AS hip,
             MAX(CASE WHEN s.spec_key = '肩幅' THEN s.spec_value END) AS shoulder,
-            MAX(CASE WHEN s.spec_key = '足のサイズ' THEN s.spec_value END) AS foot,
             MAX(CASE WHEN s.spec_key = '膣の深さ' THEN s.spec_value END) AS vagina_depth,
             MAX(CASE WHEN s.spec_key = 'アナルの深さ' THEN s.spec_value END) AS anal_depth,
             MAX(CASE WHEN s.spec_key = '口の深さ' THEN s.spec_value END) AS mouth_depth,
@@ -126,33 +132,33 @@ def search():
     '''
     params = []
 
-    # フィルタ条件
+    # フィルタ条件（★ 数値カラムを直接参照）
     if keyword:
         query += ' AND p.name LIKE ?'
         params.append(f'%{keyword}%')
     if height_min:
-        query += ' AND CAST(REPLACE(REPLACE(MAX(CASE WHEN s.spec_key = "身長" THEN s.spec_value END), "cm", ""), " ", "") AS REAL) >= ?'
+        query += ' AND p.height_cm >= ?'
         params.append(float(height_min))
     if height_max:
-        query += ' AND CAST(REPLACE(REPLACE(MAX(CASE WHEN s.spec_key = "身長" THEN s.spec_value END), "cm", ""), " ", "") AS REAL) <= ?'
+        query += ' AND p.height_cm <= ?'
         params.append(float(height_max))
     if weight_min:
-        query += ' AND CAST(REPLACE(REPLACE(MAX(CASE WHEN s.spec_key = "体重" THEN s.spec_value END), "kg", ""), " ", "") AS REAL) >= ?'
+        query += ' AND p.weight_kg >= ?'
         params.append(float(weight_min))
     if weight_max:
-        query += ' AND CAST(REPLACE(REPLACE(MAX(CASE WHEN s.spec_key = "体重" THEN s.spec_value END), "kg", ""), " ", "") AS REAL) <= ?'
+        query += ' AND p.weight_kg <= ?'
         params.append(float(weight_max))
     if foot_min:
-        query += ' AND CAST(REPLACE(REPLACE(MAX(CASE WHEN s.spec_key = "足のサイズ" THEN s.spec_value END), "cm", ""), " ", "") AS REAL) >= ?'
+        query += ' AND p.foot_cm >= ?'
         params.append(float(foot_min))
     if foot_max:
-        query += ' AND CAST(REPLACE(REPLACE(MAX(CASE WHEN s.spec_key = "足のサイズ" THEN s.spec_value END), "cm", ""), " ", "") AS REAL) <= ?'
+        query += ' AND p.foot_cm <= ?'
         params.append(float(foot_max))
     if price_min:
-        query += ' AND CAST(REPLACE(p.price, ",", "") AS INTEGER) >= ?'
+        query += ' AND p.price_int >= ?'
         params.append(int(price_min))
     if price_max:
-        query += ' AND CAST(REPLACE(p.price, ",", "") AS INTEGER) <= ?'
+        query += ' AND p.price_int <= ?'
         params.append(int(price_max))
     if selected_cups:
         placeholders = ','.join(['?'] * len(selected_cups))
@@ -204,16 +210,16 @@ def search():
 
     query += ' GROUP BY p.id'
 
-    # ソート（エイリアスでORDER BY）
+    # ★ ソート（数値カラムを使用）
     sort_map = {
-        'price_asc': ('CAST(REPLACE(p.price, ",", "") AS INTEGER) ASC', 'price'),
-        'price_desc': ('CAST(REPLACE(p.price, ",", "") AS INTEGER) DESC', 'price'),
-        'height_asc': ('CAST(REPLACE(REPLACE(height, "cm", ""), " ", "") AS REAL) ASC', 'height'),
-        'height_desc': ('CAST(REPLACE(REPLACE(height, "cm", ""), " ", "") AS REAL) DESC', 'height'),
-        'weight_asc': ('CAST(REPLACE(REPLACE(weight, "kg", ""), " ", "") AS REAL) ASC', 'weight'),
-        'weight_desc': ('CAST(REPLACE(REPLACE(weight, "kg", ""), " ", "") AS REAL) DESC', 'weight'),
-        'bust_asc': ('CAST(REPLACE(REPLACE(bust, "cm", ""), " ", "") AS REAL) ASC', 'bust'),
-        'bust_desc': ('CAST(REPLACE(REPLACE(bust, "cm", ""), " ", "") AS REAL) DESC', 'bust'),
+        'price_asc': ('p.price_int ASC', 'price'),
+        'price_desc': ('p.price_int DESC', 'price'),
+        'height_asc': ('p.height_cm ASC', 'height'),
+        'height_desc': ('p.height_cm DESC', 'height'),
+        'weight_asc': ('p.weight_kg ASC', 'weight'),
+        'weight_desc': ('p.weight_kg DESC', 'weight'),
+        'bust_asc': ('MAX(CASE WHEN s.spec_key = "バスト" THEN CAST(REPLACE(s.spec_value, "cm", "") AS REAL) END) ASC', 'bust'),
+        'bust_desc': ('MAX(CASE WHEN s.spec_key = "バスト" THEN CAST(REPLACE(s.spec_value, "cm", "") AS REAL) END) DESC', 'bust'),
     }
     if sort_by in sort_map:
         order_clause, _ = sort_map[sort_by]
@@ -237,14 +243,6 @@ def search():
         results_with_site.append(row_dict)
 
     # 総件数取得（ページネーション用）
-    count_query = '''
-        SELECT COUNT(DISTINCT p.id) AS total
-        FROM products p
-        LEFT JOIN specs s ON p.id = s.product_id
-        WHERE 1=1
-    '''
-    # 簡単な実装のため、同じフィルタ条件をコピー（実際はクエリを別途構築）
-    # ここでは簡略化のため、全件数を取得（キャッシュできるが）
     conn2 = get_db_connection()
     total = conn2.execute('SELECT COUNT(*) AS total FROM products').fetchone()['total']
     conn2.close()
@@ -254,17 +252,11 @@ def search():
     all_materials = get_all_materials()
     available_cups = CUP_ORDER
 
-    # 範囲取得（簡易的なmin/max）
-    def get_min_max(spec_key):
+    # 範囲取得（数値カラムから直接取得）
+    def get_min_max(col_name):
         conn = get_db_connection()
         c = conn.cursor()
-        c.execute('''
-            SELECT 
-                MIN(CAST(REPLACE(REPLACE(spec_value, 'cm', ''), ' ', '') AS REAL)) as min_val,
-                MAX(CAST(REPLACE(REPLACE(spec_value, 'cm', ''), ' ', '') AS REAL)) as max_val
-            FROM specs
-            WHERE spec_key = ? AND spec_value GLOB '*[0-9]*'
-        ''', (spec_key,))
+        c.execute(f'SELECT MIN({col_name}) as min_val, MAX({col_name}) as max_val FROM products WHERE {col_name} IS NOT NULL')
         row = c.fetchone()
         conn.close()
         if row and row['min_val'] is not None:
@@ -274,7 +266,7 @@ def search():
     def get_price_min_max():
         conn = get_db_connection()
         c = conn.cursor()
-        c.execute('SELECT MIN(CAST(REPLACE(price, ",", "") AS INTEGER)) as min_val, MAX(CAST(REPLACE(price, ",", "") AS INTEGER)) as max_val FROM products WHERE price IS NOT NULL AND price != "" AND price != "取得できず"')
+        c.execute('SELECT MIN(price_int) as min_val, MAX(price_int) as max_val FROM products WHERE price_int IS NOT NULL')
         row = c.fetchone()
         conn.close()
         if row and row['min_val'] is not None:
@@ -282,9 +274,9 @@ def search():
         return 0, 1000000
 
     price_min_val, price_max_val = get_price_min_max()
-    height_min_val, height_max_val = get_min_max('身長')
-    weight_min_val, weight_max_val = get_min_max('体重')
-    foot_min_val, foot_max_val = get_min_max('足のサイズ')
+    height_min_val, height_max_val = get_min_max('height_cm')
+    weight_min_val, weight_max_val = get_min_max('weight_kg')
+    foot_min_val, foot_max_val = get_min_max('foot_cm')
 
     return render_template('search.html',
                            results=results_with_site,
