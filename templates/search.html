@@ -18,30 +18,36 @@
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(5px);
             box-shadow: 0 8px 32px rgba(0, 80, 120, 0.12);
-            padding: 15px 12px;
+            padding: 12px 10px;
             position: sticky;
             top: 20px;
             height: fit-content;
             border: 1px solid rgba(120, 180, 220, 0.25);
-            font-size: 0.8rem;
+            font-size: 0.7rem;
         }
         .sidebar h5 {
             color: #1a4b6d;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 0.9rem;
             border-bottom: 2px solid #7fc1e0;
-            padding-bottom: 6px;
+            padding-bottom: 4px;
+            margin-bottom: 0.5rem;
         }
-        .filter-group { margin-bottom: 1rem; }
+        .filter-group {
+            margin-bottom: 0.6rem;
+        }
         .filter-group label {
             font-weight: 600;
             color: #1a4b6d;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .filter-group .form-control { font-size: 0.75rem; padding: 2px 6px; }
+        .filter-group .form-control {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+        }
         input[type="range"] {
             width: 100%;
             margin: 2px 0;
@@ -62,7 +68,7 @@
         .slider-value {
             font-weight: 700;
             color: #0a4b6a;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             min-width: 30px;
             display: inline-block;
             text-align: center;
@@ -76,18 +82,29 @@
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.2rem 0.4rem;
+            gap: 0.2rem 0.3rem;
+            align-items: center;
         }
-        .checkbox-group .form-check { font-size: 0.7rem; }
-        .form-check-input { width: 12px; height: 12px; }
-        .form-check-input:checked { background-color: #3a8bb5; border-color: #3a8bb5; }
+        .checkbox-group .form-check {
+            font-size: 0.65rem;
+            margin-right: 0.1rem;
+        }
+        .form-check-input {
+            width: 11px;
+            height: 11px;
+        }
+        .form-check-input:checked {
+            background-color: #3a8bb5;
+            border-color: #3a8bb5;
+        }
         .btn-primary {
             background: linear-gradient(135deg, #4a9ec4, #2a7a9e);
             border: none;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             padding: 4px 10px;
             transition: 0.2s;
+            margin-bottom: 0.5rem;
         }
         .btn-primary:hover {
             transform: translateY(-1px);
@@ -254,9 +271,8 @@
                 <div class="sidebar">
                     <h5><i class="bi bi-sliders2 me-1"></i>検索</h5>
 
-                    <!-- 検索ボタンを上部に移動 -->
                     <form method="GET" action="{{ url_for('search') }}">
-                        <button type="submit" class="btn btn-primary w-100 mb-3"><i class="bi bi-search me-1"></i>検索</button>
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>検索</button>
 
                         <div class="filter-group">
                             <label for="keyword" class="form-label">キーワード</label>
@@ -283,14 +299,14 @@
                             <label>体重 (kg)</label>
                             <div class="slider-row">
                                 <span class="slider-value" id="w_min_d">{{ weight_min or weight_min_val }}</span>
-                                <input type="range" name="weight_min" min="{{ weight_min_val }}" max="{{ weight_max_val }}" step="1" 
+                                <input type="range" name="weight_min" min="{{ weight_min_val }}" max="200" step="1" 
                                        value="{{ weight_min or weight_min_val }}" 
                                        oninput="document.getElementById('w_min_d').textContent=this.value">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="w_max_d">{{ weight_max or weight_max_val }}</span>
-                                <input type="range" name="weight_max" min="{{ weight_min_val }}" max="{{ weight_max_val }}" step="1" 
-                                       value="{{ weight_max or weight_max_val }}" 
+                                <span class="slider-value" id="w_max_d">{{ weight_max if weight_max and weight_max <= 200 else 200 }}</span>
+                                <input type="range" name="weight_max" min="{{ weight_min_val }}" max="200" step="1" 
+                                       value="{{ weight_max if weight_max and weight_max <= 200 else 200 }}" 
                                        oninput="document.getElementById('w_max_d').textContent=this.value">
                             </div>
                         </div>
@@ -299,14 +315,14 @@
                             <label>足サイズ (cm)</label>
                             <div class="slider-row">
                                 <span class="slider-value" id="f_min_d">{{ foot_min or foot_min_val }}</span>
-                                <input type="range" name="foot_min" min="{{ foot_min_val }}" max="{{ foot_max_val }}" step="1" 
+                                <input type="range" name="foot_min" min="{{ foot_min_val }}" max="35" step="1" 
                                        value="{{ foot_min or foot_min_val }}" 
                                        oninput="document.getElementById('f_min_d').textContent=this.value">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="f_max_d">{{ foot_max or foot_max_val }}</span>
-                                <input type="range" name="foot_max" min="{{ foot_min_val }}" max="{{ foot_max_val }}" step="1" 
-                                       value="{{ foot_max or foot_max_val }}" 
+                                <span class="slider-value" id="f_max_d">{{ foot_max if foot_max and foot_max <= 35 else 35 }}</span>
+                                <input type="range" name="foot_max" min="{{ foot_min_val }}" max="35" step="1" 
+                                       value="{{ foot_max if foot_max and foot_max <= 35 else 35 }}" 
                                        oninput="document.getElementById('f_max_d').textContent=this.value">
                             </div>
                         </div>
@@ -327,8 +343,9 @@
                             </div>
                         </div>
 
+                        <!-- カップ数 + M以上 -->
                         <div class="filter-group">
-                            <label class="form-label">カップ数 (AA〜L)</label>
+                            <label class="form-label">カップ数</label>
                             <div class="checkbox-group">
                                 {% for cup in available_cups %}
                                 <div class="form-check">
@@ -337,13 +354,10 @@
                                     <label class="form-check-label" for="cup_{{ loop.index }}">{{ cup }}</label>
                                 </div>
                                 {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="cup_m_or_more" id="cup_m_or_more" {% if cup_m_or_more %}checked{% endif %}>
-                                <label class="form-check-label" for="cup_m_or_more"><strong>M以上</strong></label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="cup_m_or_more" id="cup_m_or_more" {% if cup_m_or_more %}checked{% endif %}>
+                                    <label class="form-check-label" for="cup_m_or_more"><strong>M以上</strong></label>
+                                </div>
                             </div>
                         </div>
 
@@ -351,11 +365,13 @@
                             <label class="form-label">カテゴリ</label>
                             <div class="checkbox-group">
                                 {% for cat in all_categories %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="category" value="{{ cat }}" id="cat_{{ loop.index }}"
-                                        {% if cat in selected_categories %}checked{% endif %}>
-                                    <label class="form-check-label" for="cat_{{ loop.index }}">{{ cat }}</label>
-                                </div>
+                                    {% if cat != '不明' %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="category" value="{{ cat }}" id="cat_{{ loop.index }}"
+                                            {% if cat in selected_categories %}checked{% endif %}>
+                                        <label class="form-check-label" for="cat_{{ loop.index }}">{{ cat }}</label>
+                                    </div>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                         </div>
@@ -373,7 +389,6 @@
                             </div>
                         </div>
 
-                        <!-- 検索ボタンは上部に移動済みのため、ここには何も置かない -->
                     </form>
                 </div>
             </div>
