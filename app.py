@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
 CUP_ORDER = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
-PER_PAGE = 30  # 1ページあたりの表示件数
+PER_PAGE = 30
 
 def get_db_connection():
     conn = sqlite3.connect('dolls.db')
@@ -19,28 +19,36 @@ def extract_site_name(url):
     if not url:
         return ''
     domain = re.sub(r'^https?://(www\.)?', '', url)
-    domain = domain.split('/')[0]
-    return domain
+    return domain.split('/')[0]
 
-# ★ インデックス作成（初回実行時のみ）
 def create_indexes():
-    conn = get_db_connection()
-    c = conn.cursor()
-    c.execute('CREATE INDEX IF NOT EXISTS idx_products_id ON products(id)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_specs_product_id ON specs(product_id)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_specs_key ON specs(spec_key)')
-    # ★ 数値カラム用インデックス
-    c.execute('CREATE INDEX IF NOT EXISTS idx_products_height_cm ON products(height_cm)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_products_weight_kg ON products(weight_kg)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_products_foot_cm ON products(foot_cm)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_products_price_int ON products(price_int)')
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products'")
+        if not c.fetchone():
+            conn.close()
+            return
+        c.execute("PRAGMA table_info(products)")
+        columns = [row[1] for row in c.fetchall()]
+        if 'height_cm' in columns:
+            c.execute('CREATE INDEX IF NOT EXISTS idx_products_height_cm ON products(height_cm)')
+        if 'weight_kg' in columns:
+            c.execute('CREATE INDEX IF NOT EXISTS idx_products_weight_kg ON products(weight_kg)')
+        if 'foot_cm' in columns:
+            c.execute('CREATE INDEX IF NOT EXISTS idx_products_foot_cm ON products(foot_cm)')
+        if 'price_int' in columns:
+            c.execute('CREATE INDEX IF NOT EXISTS idx_products_price_int ON products(price_int)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_products_id ON products(id)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_specs_product_id ON specs(product_id)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_specs_key ON specs(spec_key)')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ インデックス作成スキップ: {e}")
 
-# 初回インデックス作成
 create_indexes()
 
-# ★ カテゴリ・材質リストをキャッシュ
 @lru_cache(maxsize=1)
 def get_all_categories():
     conn = get_db_connection()
@@ -59,7 +67,6 @@ def get_all_materials():
     conn.close()
     return rows
 
-# --- ルート ---
 @app.route('/')
 def top():
     return render_template('top.html')
@@ -81,13 +88,11 @@ def legal():
 def privacy():
     return render_template('privacy.html')
 
-# --- 検索（数値カラム対応版） ---
 @app.route('/search', methods=['GET'])
 def search():
     if not session.get('age_verified'):
         return redirect(url_for('top'))
 
-    # フィルタパラメータ
     keyword = request.args.get('keyword', '').strip()
     height_min = request.args.get('height_min', '')
     height_max = request.args.get('height_max', '')
@@ -108,7 +113,6 @@ def search():
     conn = get_db_connection()
     c = conn.cursor()
 
-    # ★ メインクエリ（JOIN + GROUP BY、数値カラムを使用）
     query = '''
         SELECT 
             p.id, p.name, p.price, p.url, p.category,
@@ -132,7 +136,6 @@ def search():
     '''
     params = []
 
-    # フィルタ条件（★ 数値カラムを直接参照）
     if keyword:
         query += ' AND p.name LIKE ?'
         params.append(f'%{keyword}%')
@@ -210,7 +213,6 @@ def search():
 
     query += ' GROUP BY p.id'
 
-    # ★ ソート（数値カラムを使用）
     sort_map = {
         'price_asc': ('p.price_int ASC', 'price'),
         'price_desc': ('p.price_int DESC', 'price'),
@@ -227,7 +229,6 @@ def search():
     else:
         query += ' ORDER BY p.id'
 
-    # ★ ページネーション
     query += ' LIMIT ? OFFSET ?'
     params.extend([PER_PAGE, offset])
 
@@ -235,24 +236,20 @@ def search():
     results = c.fetchall()
     conn.close()
 
-    # サイト名を追加
     results_with_site = []
     for row in results:
         row_dict = dict(row)
         row_dict['site_name'] = extract_site_name(row['url'])
         results_with_site.append(row_dict)
 
-    # 総件数取得（ページネーション用）
     conn2 = get_db_connection()
     total = conn2.execute('SELECT COUNT(*) AS total FROM products').fetchone()['total']
     conn2.close()
 
-    # カテゴリ・材質リスト（キャッシュから）
     all_categories = get_all_categories()
     all_materials = get_all_materials()
     available_cups = CUP_ORDER
 
-    # 範囲取得（数値カラムから直接取得）
     def get_min_max(col_name):
         conn = get_db_connection()
         c = conn.cursor()
@@ -309,12 +306,10 @@ def search():
                            total=total,
                            per_page=PER_PAGE)
 
-# ExoClick検証ルート（既存）
 @app.route('/012d8cfd3eec704c72e046dfd2b72ee0.html')
 def verify_exoclick():
     return "012d8cfd3eec704c72e046dfd2b72ee0"
 
-# WebAI ExoClick検証用ルート追加（love-doll-search用）
 @app.route('/8823b79722a732180d4e970ca4900eb4.html')
 def verify_exoclick_new():
     return "8823b79722a732180d4e970ca4900eb4"
