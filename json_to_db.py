@@ -55,9 +55,15 @@ for product in products:
 
     for variant in variants:
         category = variant.get('大分類', '不明')
-        height_cm = extract_num(variant.get('身長', ''))
-        weight_kg = extract_num(variant.get('体重', ''))
-        foot_cm = extract_num(variant.get('足のサイズ', ''))
+        
+        # ★【2026-07-04 修正】フォールバックマッピング：高さ→身長、重さ→体重
+        height_raw = variant.get('身長') or variant.get('高さ')
+        weight_raw = variant.get('体重') or variant.get('重さ')
+        foot_raw = variant.get('足のサイズ') or variant.get('足サイズ')
+        
+        height_cm = extract_num(height_raw)
+        weight_kg = extract_num(weight_raw)
+        foot_cm = extract_num(foot_raw)
         price_int = extract_num(price)
 
         try:

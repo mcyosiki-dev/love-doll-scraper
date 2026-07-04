@@ -7,27 +7,27 @@ from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 
 # ============================================================
-# 1. 設定
+# 1. 設定（yourdoll + kanadoll、jp-dollsは除外）
 # ============================================================
 YOURDOLL_CATEGORY = "https://yourdoll.jp/product-category/all-sex-dolls/"
-JPDOLL_CATEGORIES = [
-    "https://www.jp-dolls.com/category/c2.html",   # TPE製
-    "https://www.jp-dolls.com/category/c25.html",  # シリコン製
-    "https://www.jp-dolls.com/category/c24.html",  # シリコンヘッド
-    "https://www.jp-dolls.com/category/c41.html",  # ミニドール
-    "https://www.jp-dolls.com/category/c15.html",  # 男性型・ふたなり
-    "https://www.jp-dolls.com/category/c38.html",  # 半身・トルソー
-]
-# ★ テスト用に各カテゴリの2ページ目まで処理（本番は None に戻す）
-MAX_PAGES_PER_CATEGORY = 2
+JPDOLL_CATEGORIES = []  # ★ jp-dolls はスクレイピング対象外
+KANADOLL_CATEGORY = "https://www.kanadoll.jp/?s=%E3%80%80&post_type=product"
+
+MAX_PAGES_PER_CATEGORY = None  # None = 次へボタンがなくなるまで続行
 
 # ============================================================
 # 2. 共通関数（表記揺れ正規化など）
 # ============================================================
 def normalize_spec_key(key):
     key = key.strip()
+    # ★【2026-07-04 修正】部分一致で「高さ」「重さ」を「身長」「体重」に変換（kanadoll対応）
+    import re
+    if re.search(r'高さ', key):
+        return "身長"
+    if re.search(r'重さ', key):
+        return "体重"
+    # 既存の完全一致マッピング
     mapping = {
-        # 既存のマッピング
         "トップ": "バスト",
         "バスト": "バスト",
         "アンダー": "アンダーバスト",
@@ -37,7 +37,7 @@ def normalize_spec_key(key):
         "口深さ": "口の深さ",
         "足サイズ": "足のサイズ",
         "素材": "材質",
-        # ★ 材質の正規化を追加（これで fix_material.py は不要）
+        "高さ": "身長",  # 完全一致フォールバック
         "Silicon": "シリコン",
         "silicon": "シリコン",
         "シリコーン": "シリコン",
@@ -135,27 +135,17 @@ def log_error(url, msg):
     with open('error.log', 'a', encoding='utf-8') as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} | {url} | {msg}\n")
 
-# ============================================================
-# 2.5 ★ 割引価格対応（scrape_batch.py から移植）
-# ============================================================
 def extract_price(text):
     if not text:
         return "取得できず"
-    
-    # 割引率を検出
     discount_match = re.search(r'(\d+)\s*[%％]\s*(?:OFF|オフ|割引)', text, re.IGNORECASE)
     discount_rate = None
     if discount_match:
         discount_rate = int(discount_match.group(1)) / 100
-    
-    # すべての数値を抽出
     numbers = re.findall(r'([\d,]+)', text)
     if not numbers:
         return "取得できず"
-    
     int_numbers = [int(n.replace(',', '')) for n in numbers]
-    
-    # 割引率がある場合 → 最後の数値（セール価格）から元値を計算
     if discount_rate is not None and len(int_numbers) >= 1:
         final_price = int_numbers[-1]
         if discount_rate > 0 and discount_rate < 1:
@@ -163,12 +153,10 @@ def extract_price(text):
             return str(int(round(original_price)))
         else:
             return str(final_price)
-    
-    # 割引率がない場合 → 最初の数値を元値として返す
     return str(int_numbers[0])
 
 # ============================================================
-# 3. 商品ページのスクレイピング（★バリエーション対応版）
+# 3. 商品ページのスクレイピング（kanadoll対応版）
 # ============================================================
 async def scrape_one(url, output_file="all_data.json"):
     processed_urls = load_processed_urls()
@@ -190,7 +178,10 @@ async def scrape_one(url, output_file="all_data.json"):
                     try:
                         await page.click('text="はい"', timeout=3000)
                     except:
-                        pass
+                        try:
+                            await page.click('#agy-accept', timeout=3000)
+                        except:
+                            pass
             await page.wait_for_timeout(1000)
             html = await page.content()
         except Exception as e:
@@ -208,13 +199,11 @@ async def scrape_one(url, output_file="all_data.json"):
             print(f"  ⏭️ スキップ（不要データ）: {product_name}")
             return None
         
-        # ★ 価格抽出（extract_price を使用）
         price = "取得できず"
         price_elem = soup.find('div', class_='price') or soup.find('p', class_='price')
         if price_elem:
             price_text = price_elem.get_text(strip=True)
             price = extract_price(price_text)
-        
         if price == "取得できず":
             for text in soup.stripped_strings:
                 if '円' in text and len(text) < 50:
@@ -222,13 +211,13 @@ async def scrape_one(url, output_file="all_data.json"):
                     if price != "取得できず":
                         break
         
-        spec = {}
         all_specs = []
         penis = []
         
+        # ペニステーブル（従来通り）
         for table in soup.find_all('table'):
-            # ペニステーブル処理
-            if "最小/最大直径" in str(table) or "シリアルナンバー" in str(table):
+            table_html = str(table)
+            if "最小/最大直径" in table_html or "シリアルナンバー" in table_html:
                 rows = table.find_all('tr')
                 if not rows:
                     continue
@@ -243,51 +232,83 @@ async def scrape_one(url, output_file="all_data.json"):
                             row_data[h] = cols[idx].get_text(strip=True)
                     if row_data:
                         penis.append(row_data)
-                if penis:
-                    spec["ペニス"] = penis
-                continue
-            
-            # 通常のスペックテーブル（身長を含む）
-            if '身長' not in str(table):
-                continue
-            current_spec = {}
-            for row in table.find_all('tr'):
-                cols = row.find_all(['td', 'th'])
-                if len(cols) < 4:
+                break
+        
+        # ★ パネル単位で抽出（yourdoll 用）
+        panels = soup.find_all('div', class_='vc_tta-panel')
+        if panels:
+            for panel in panels:
+                title_elem = panel.find('h4', class_='vc_tta-panel-title')
+                if not title_elem:
                     continue
-                k1, v1 = cols[0].get_text(strip=True), cols[1].get_text(strip=True)
-                k2, v2 = cols[2].get_text(strip=True), cols[3].get_text(strip=True)
-                if k1 and v1:
-                    nk = normalize_spec_key(k1)
-                    v = clean_height(v1) if nk == "身長" else clean_spec_value(v1)
-                    current_spec[nk] = v
-                if k2 and v2:
-                    nk = normalize_spec_key(k2)
-                    v = clean_height(v2) if nk == "身長" else clean_spec_value(v2)
-                    current_spec[nk] = v
-            if current_spec:
-                all_specs.append(current_spec)
+                title_text = title_elem.get_text(strip=True)
+                height_match = re.search(r'(\d+)cm', title_text)
+                height = height_match.group(1) + 'cm' if height_match else ''
+                
+                table = panel.find('table')
+                if not table:
+                    continue
+                current_spec = {}
+                rows = table.find_all('tr')
+                for row in rows:
+                    cols = row.find_all(['td', 'th'])
+                    if len(cols) < 4:
+                        continue
+                    k1, v1 = cols[0].get_text(strip=True), cols[1].get_text(strip=True)
+                    k2, v2 = cols[2].get_text(strip=True), cols[3].get_text(strip=True)
+                    if k1 and v1:
+                        nk = normalize_spec_key(k1)
+                        v = clean_height(v1) if nk == "身長" else clean_spec_value(v1)
+                        current_spec[nk] = v
+                    if k2 and v2:
+                        nk = normalize_spec_key(k2)
+                        v = clean_height(v2) if nk == "身長" else clean_spec_value(v2)
+                        current_spec[nk] = v
+                if current_spec:
+                    if height and '身長' not in current_spec:
+                        current_spec['身長'] = height
+                    if 'バスト' in current_spec and 'アンダーバスト' in current_spec:
+                        cup = calculate_cup(current_spec['バスト'], current_spec['アンダーバスト'])
+                        if cup:
+                            current_spec['カップ数'] = cup
+                    if penis:
+                        current_spec['ペニス'] = penis
+                    all_specs.append(current_spec)
+        else:
+            # ★ テーブル抽出（kanadoll を含む汎用版）
+            for table in soup.find_all('table'):
+                if '身長' not in str(table) and '高さ' not in str(table):
+                    continue
+                current_spec = {}
+                rows = table.find_all('tr')
+                for row in rows:
+                    cols = row.find_all(['td', 'th'])
+                    if len(cols) < 2:
+                        continue
+                    if len(cols) == 2:
+                        k = cols[0].get_text(strip=True)
+                        v = cols[1].get_text(strip=True)
+                        if k and v:
+                            nk = normalize_spec_key(k)
+                            v = clean_height(v) if nk == "身長" else clean_spec_value(v)
+                            current_spec[nk] = v
+                    elif len(cols) >= 4:
+                        k1, v1 = cols[0].get_text(strip=True), cols[1].get_text(strip=True)
+                        k2, v2 = cols[2].get_text(strip=True), cols[3].get_text(strip=True)
+                        if k1 and v1:
+                            nk = normalize_spec_key(k1)
+                            v = clean_height(v1) if nk == "身長" else clean_spec_value(v1)
+                            current_spec[nk] = v
+                        if k2 and v2:
+                            nk = normalize_spec_key(k2)
+                            v = clean_height(v2) if nk == "身長" else clean_spec_value(v2)
+                            current_spec[nk] = v
+                if current_spec:
+                    if penis:
+                        current_spec['ペニス'] = penis
+                    all_specs.append(current_spec)
         
-        # ★ フォールバック抽出（テーブルで見つからなかった場合）
-        if not all_specs:
-            spec_section = soup.find(string=re.compile(r'商品仕様'))
-            if spec_section:
-                parent = spec_section.find_parent()
-                if parent:
-                    current_spec = {}
-                    for line in parent.get_text(separator="\n").splitlines():
-                        if '：' in line or ':' in line:
-                            parts = re.split(r'[：:]', line, maxsplit=1)
-                            if len(parts) == 2:
-                                k, v = parts[0].strip(), parts[1].strip()
-                                if k and v and k not in current_spec:
-                                    nk = normalize_spec_key(k)
-                                    v = clean_height(v) if nk == "身長" else clean_spec_value(v)
-                                    current_spec[nk] = v
-                    if current_spec:
-                        all_specs.append(current_spec)
-        
-        # ★ さらにフォールバック（キーワード検索）
+        # フォールバック（キーワード検索）
         if not all_specs:
             current_spec = {}
             for kw in ["素材", "重さ", "高さ", "幅", "長さ", "タイプ", "膣の深さ", "肛門の深さ", "梱包サイズ"]:
@@ -297,18 +318,16 @@ async def scrape_one(url, output_file="all_data.json"):
                     v = clean_height(m.group(1)) if nk == "身長" else clean_spec_value(m.group(1))
                     current_spec[nk] = v
             if current_spec:
+                if penis:
+                    current_spec['ペニス'] = penis
                 all_specs.append(current_spec)
         
-        # ★ すべてのバリエーションにカップ数と大分類を追加
+        # 大分類・サイト名を追加
         for variant in all_specs:
-            if 'バスト' in variant and 'アンダーバスト' in variant:
-                cup = calculate_cup(variant['バスト'], variant['アンダーバスト'])
-                if cup:
-                    variant['カップ数'] = cup
             variant["大分類"] = determine_type(product_name, variant, html_text)
             variant["サイト名"] = extract_site_name(url)
         
-        # ★★★ ここが核心：バリエーションをループして個別保存 ★★★
+        # バリエーションを個別保存
         if all_specs:
             for variant in all_specs:
                 height = variant.get('身長', '')
@@ -334,7 +353,8 @@ async def scrape_one(url, output_file="all_data.json"):
                 print(f"  ✅ 保存完了（バリエーション）: {variant_name[:30]}...")
             return {"商品名": product_name, "バリエーション数": len(all_specs)}
         else:
-            # バリエーションが1つもない場合のフォールバック（通常はありえない）
+            # バリエーションが1つもない場合のフォールバック
+            spec = {}
             spec["大分類"] = determine_type(product_name, spec, html_text)
             spec["サイト名"] = extract_site_name(url)
             output = {
@@ -355,7 +375,7 @@ async def scrape_one(url, output_file="all_data.json"):
             return output
 
 # ============================================================
-# 4. URL収集（★ページネーション自動検出版）
+# 4. URL収集（yourdoll / kanadoll）
 # ============================================================
 async def collect_urls_yourdoll(max_pages=None):
     collected = set()
@@ -386,8 +406,8 @@ async def collect_urls_yourdoll(max_pages=None):
             if not found:
                 print(f"    ⏹️ 商品リンクが見つからなかったため終了")
                 break
-            # ★ 次へボタンをチェック（yourdoll は › または 次へ）
-            next_link = soup.find('a', string=re.compile(r'次へ|Next|›|»'))
+            # ★【2026-07-04 修正】クラスセレクタで「次へ」ボタンを取得（先代AI回答より）
+            next_link = soup.find('a', class_='next')
             if not next_link:
                 print(f"    ⏹️ 次へボタンがないため終了")
                 break
@@ -399,59 +419,76 @@ async def collect_urls_yourdoll(max_pages=None):
     return collected
 
 async def collect_urls_jpdolls(max_pages=None):
+    return set()
+
+async def collect_urls_kanadoll(max_pages=None):
     collected = set()
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
-        for cat_url in JPDOLL_CATEGORIES:
-            print(f"\n  📂 jpdolls カテゴリ: {cat_url}")
-            page_num = 1
-            while True:
-                url = cat_url if page_num == 1 else f"{cat_url}?page={page_num}"
-                print(f"    🔍 ページ {page_num} をクロール中: {url}")
+        page_num = 1
+        base_url = KANADOLL_CATEGORY
+        while True:
+            url = base_url if page_num == 1 else f"{base_url}&page={page_num}"
+            print(f"  🔍 kanadoll ページ {page_num} をクロール中: {url}")
+            try:
+                await page.goto(url, timeout=60000)
                 try:
-                    await page.goto(url, timeout=60000)
-                    await page.wait_for_timeout(2000)
-                    html = await page.content()
-                except Exception as e:
-                    print(f"      ⚠️ ページ読み込み失敗（終了）: {e}")
-                    break
-                soup = BeautifulSoup(html, 'html.parser')
+                    await page.click('#agy-accept', timeout=3000)
+                except:
+                    try:
+                        await page.click('button:has-text("はい")', timeout=3000)
+                    except:
+                        try:
+                            await page.click('text="はい"', timeout=3000)
+                        except:
+                            pass
+                await page.wait_for_timeout(2000)
+                html = await page.content()
+            except Exception as e:
+                print(f"    ⚠️ ページ読み込み失敗（終了）: {e}")
+                break
+            soup = BeautifulSoup(html, 'html.parser')
+            product_links = soup.select('ul.products li.product a')
+            if not product_links:
                 links = soup.find_all('a', href=True)
-                found = False
                 for link in links:
                     href = link['href']
-                    if '/goods/p' in href and href.endswith('.html'):
-                        full = "https://www.jp-dolls.com" + href if href.startswith('/') else href
+                    if '/product/' in href and not href.startswith('https://www.kanadoll.jp/?s='):
+                        full = href if href.startswith('http') else "https://www.kanadoll.jp" + href
                         full = re.sub(r'\?.*$', '', full)
                         collected.add(full)
-                        found = True
-                if not found:
-                    print(f"      ⏹️ 商品リンクが見つからなかったため終了")
+                if not collected:
+                    print(f"    ⏹️ 商品リンクが見つからなかったため終了")
                     break
-                # ★ 次へボタンをチェック（jp-dolls は Next または 次へ）
-                next_link = soup.find('a', string=re.compile(r'次へ|Next|›|»'))
-                if not next_link:
-                    print(f"      ⏹️ 次へボタンがないため終了")
-                    break
-                page_num += 1
-                if max_pages and page_num > max_pages:
-                    print(f"      ⏹️ 最大ページ数 {max_pages} に達したため終了")
-                    break
+            else:
+                for a in product_links:
+                    href = a.get('href')
+                    if href and '/product/' in href:
+                        full = href if href.startswith('http') else "https://www.kanadoll.jp" + href
+                        full = re.sub(r'\?.*$', '', full)
+                        collected.add(full)
+            next_link = soup.find('a', class_='next')
+            if not next_link:
+                print(f"    ⏹️ 次へボタンがないため終了")
+                break
+            page_num += 1
+            if max_pages and page_num > max_pages:
+                print(f"    ⏹️ 最大ページ数 {max_pages} に達したため終了")
+                break
         await browser.close()
     return collected
 
 # ============================================================
-# 5. メイン（一括実行）
+# 5. メイン
 # ============================================================
 async def main():
     start_time = time.time()
     print("=" * 60)
-    print("🚀 一括スクレイピングを開始します（yourdoll + jpdolls）")
+    print("🚀 一括スクレイピングを開始します（yourdoll + kanadoll）")
     print(f"🕒 開始時刻: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
-    # ---- ステップ1: URL収集 ----
     print("\n📡 ステップ1: 商品URLを収集します...")
     all_urls = set()
     
@@ -462,12 +499,16 @@ async def main():
     
     print("\n  [jp-dolls]")
     jp_urls = await collect_urls_jpdolls(max_pages=MAX_PAGES_PER_CATEGORY)
-    print(f"  ✅ jp-dolls: {len(jp_urls)} 件のURLを収集")
+    print(f"  ✅ jp-dolls: {len(jp_urls)} 件のURLを収集（スキップ）")
     all_urls.update(jp_urls)
+    
+    print("\n  [kanadoll]")
+    kd_urls = await collect_urls_kanadoll(max_pages=MAX_PAGES_PER_CATEGORY)
+    print(f"  ✅ kanadoll: {len(kd_urls)} 件のURLを収集")
+    all_urls.update(kd_urls)
     
     print(f"\n📊 合計 {len(all_urls)} 件のURLを収集しました。")
 
-    # ---- ステップ2: 未処理URLをフィルタ ----
     print("\n📋 ステップ2: 未処理のURLをフィルタリングします...")
     processed = load_processed_urls()
     new_urls = [url for url in all_urls if url not in processed]
@@ -477,7 +518,6 @@ async def main():
         print("✅ 新規URLはありません。処理を終了します。")
         return
 
-    # ---- ステップ3: スクレイピング実行 ----
     print("\n🔄 ステップ3: スクレイピングを実行します...")
     success_count = 0
     error_count = 0
@@ -490,7 +530,6 @@ async def main():
             error_count += 1
         time.sleep(1.5)
 
-    # ---- ステップ4: データベース更新 ----
     print("\n💾 ステップ4: データベースを更新します...")
     import subprocess
     try:
@@ -499,7 +538,6 @@ async def main():
     except Exception as e:
         print(f"⚠️ データベース更新中にエラー: {e}")
 
-    # ---- 完了 ----
     elapsed = time.time() - start_time
     print("\n" + "=" * 60)
     print(f"✅ 一括スクレイピングが完了しました！")
