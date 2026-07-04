@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
 import re
+import os
 from datetime import datetime, timedelta
 from functools import lru_cache
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 CUP_ORDER = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 PER_PAGE = 30
@@ -170,16 +171,14 @@ def search():
 
     query += ' GROUP BY p.id'
 
-    # ★ HAVING 句を構築（すべての集約条件をここに移動）
+    # HAVING 句（集約条件はすべてこちらに移動）
     having_conditions = []
 
-    # カップ数（複数選択）
     if selected_cups:
         placeholders = ','.join(['?'] * len(selected_cups))
         having_conditions.append(f'MAX(CASE WHEN s.spec_key = "カップ数" THEN s.spec_value END) IN ({placeholders})')
         params.extend(selected_cups)
 
-    # カップ数（M以上）
     if cup_m_or_more:
         having_conditions.append('''
             MAX(CASE WHEN s.spec_key = "カップ数" THEN 
@@ -216,7 +215,6 @@ def search():
             END) >= 13
         ''')
 
-    # 材質（複数選択）
     if materials:
         placeholders = ','.join(['?'] * len(materials))
         having_conditions.append(f'MAX(CASE WHEN s.spec_key = "材質" THEN s.spec_value END) IN ({placeholders})')
