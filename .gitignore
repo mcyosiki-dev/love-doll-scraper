@@ -1,0 +1,14 @@
+venv/ 
+__pycache__/ 
+*.pyc 
+*.db 
+all_data.json 
+debug_*.py 
+debug_*.html 
+*_backup* 
+test_*.py 
+force_*.py 
+check_*.py 
+migrate_*.py 
+remove_*.py 
+app_backup.py 
