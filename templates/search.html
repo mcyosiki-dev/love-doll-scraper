@@ -299,14 +299,14 @@
                             <label>体重 (kg)</label>
                             <div class="slider-row">
                                 <span class="slider-value" id="w_min_d">{{ weight_min or weight_min_val }}</span>
-                                <input type="range" name="weight_min" min="{{ weight_min_val }}" max="200" step="1" 
+                                <input type="range" name="weight_min" min="{{ weight_min_val }}" max="70" step="1" 
                                        value="{{ weight_min or weight_min_val }}" 
                                        oninput="document.getElementById('w_min_d').textContent=this.value">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="w_max_d">{{ weight_max if weight_max and weight_max <= 200 else 200 }}</span>
-                                <input type="range" name="weight_max" min="{{ weight_min_val }}" max="200" step="1" 
-                                       value="{{ weight_max if weight_max and weight_max <= 200 else 200 }}" 
+                                <span class="slider-value" id="w_max_d">{{ weight_max if weight_max and weight_max <= 70 else 70 }}</span>
+                                <input type="range" name="weight_max" min="{{ weight_min_val }}" max="70" step="1" 
+                                       value="{{ weight_max if weight_max and weight_max <= 70 else 70 }}" 
                                        oninput="document.getElementById('w_max_d').textContent=this.value">
                             </div>
                         </div>
@@ -315,14 +315,14 @@
                             <label>足サイズ (cm)</label>
                             <div class="slider-row">
                                 <span class="slider-value" id="f_min_d">{{ foot_min or foot_min_val }}</span>
-                                <input type="range" name="foot_min" min="{{ foot_min_val }}" max="35" step="1" 
+                                <input type="range" name="foot_min" min="{{ foot_min_val }}" max="30" step="1" 
                                        value="{{ foot_min or foot_min_val }}" 
                                        oninput="document.getElementById('f_min_d').textContent=this.value">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="f_max_d">{{ foot_max if foot_max and foot_max <= 35 else 35 }}</span>
-                                <input type="range" name="foot_max" min="{{ foot_min_val }}" max="35" step="1" 
-                                       value="{{ foot_max if foot_max and foot_max <= 35 else 35 }}" 
+                                <span class="slider-value" id="f_max_d">{{ foot_max if foot_max and foot_max <= 30 else 30 }}</span>
+                                <input type="range" name="foot_max" min="{{ foot_min_val }}" max="30" step="1" 
+                                       value="{{ foot_max if foot_max and foot_max <= 30 else 30 }}" 
                                        oninput="document.getElementById('f_max_d').textContent=this.value">
                             </div>
                         </div>
@@ -361,11 +361,22 @@
                             </div>
                         </div>
 
+                        <!-- カテゴリ（表示順：女性型 → トルソー → オナホール → その他） -->
                         <div class="filter-group">
                             <label class="form-label">カテゴリ</label>
                             <div class="checkbox-group">
+                                {% set category_order = ['女性型', 'トルソー', 'オナホール'] %}
+                                {% for cat in category_order %}
+                                    {% if cat in all_categories %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="category" value="{{ cat }}" id="cat_{{ loop.index }}"
+                                            {% if cat in selected_categories %}checked{% endif %}>
+                                        <label class="form-check-label" for="cat_{{ loop.index }}">{{ cat }}</label>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
                                 {% for cat in all_categories %}
-                                    {% if cat != '不明' %}
+                                    {% if cat not in category_order and cat != '不明' %}
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="category" value="{{ cat }}" id="cat_{{ loop.index }}"
                                             {% if cat in selected_categories %}checked{% endif %}>
