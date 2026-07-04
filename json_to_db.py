@@ -10,22 +10,45 @@ def extract_num(val):
         return float(match.group(1))
     return None
 
-# ★ 材質正規化マッピング（追加）
+# ★【2026-07-04 修正】材質正規化マッピング（WebAI様からの確定版・再修正）
 MATERIAL_MAPPING = {
-    'シリコーン': 'シリコン',
-    'Silicon': 'シリコン',
-    'silicon': 'シリコン',
-    'Silicone': 'シリコン',
-    'silicone': 'シリコン',
+    # 基本素材（単独）
+    'シリコン': 'シリコン',
+    'フルシリコン': 'シリコン',
     'シリコン製': 'シリコン',
-    'Tpe': 'TPE',
-    'tpe': 'TPE',
+    'シリコンボディ': 'シリコン',
+    'TPE': 'TPE',
     'TPE製': 'TPE',
-    'シリコン＋TPE': 'シリコン/TPE',
-    'シリコン＆TPE': 'シリコン/TPE',
-    'シリコン+TPE': 'シリコン/TPE',
-    'シリコン&TPE': 'シリコン/TPE',
+    'STPE': 'S-TPE',
+    'S-TPE': 'S-TPE',
+    'PVC': 'PVC',
+    'レジン': 'レジン',
+    # 組み合わせ（+表記） → すべて「シリコン+TPE」に統一
+    'シリコン+TPE': 'シリコン+TPE',
+    'シリコン＋TPE': 'シリコン+TPE',
+    'シリコン＆TPE': 'シリコン+TPE',
+    'シリコン&TPE': 'シリコン+TPE',
+    'Silicon+TPE': 'シリコン+TPE',
+    'TPE+シリコン': 'シリコン+TPE',
+    'TPE製＋シリコン製': 'シリコン+TPE',
+    'silicon head+TPE body': 'シリコン+TPE',
+    'シリコンヘッド+TPEボディ': 'シリコン+TPE',
+    'シリコンヘッド＋TPEボディ': 'シリコン+TPE',
+    'シリコンヘッド + TPEボディ': 'シリコン+TPE',
+    # シリコン + S-TPE
+    'シリコン+S-TPE': 'シリコン+S-TPE',
+    'Silicon/Silicon+TPE': 'シリコン+S-TPE',
+    # PVC + シリコン
+    'PVC+シリコン': 'PVC+シリコン',
+    'シリコンボディ＋PVC頭部': 'PVC+シリコン',
+    # PVC + TPE
+    'PVC+TPE': 'PVC+TPE',
+    # レジン + シリコン
+    'レジン＋silicon': 'レジン+シリコン',
 }
+
+# ★ 材質フィルタから除外する値（ノイズ）
+EXCLUDED_MATERIALS = ['身長']
 
 with open('all_data.json', 'r', encoding='utf-8') as f:
     products = json.load(f)
@@ -73,11 +96,14 @@ for product in products:
     for variant in variants:
         category = variant.get('大分類', '不明')
 
-        # ★ 材質を正規化（追加）
+        # ★ 材質を正規化
         if '材質' in variant:
             raw_material = variant['材質']
             if raw_material in MATERIAL_MAPPING:
                 variant['材質'] = MATERIAL_MAPPING[raw_material]
+            # ★ 除外対象の材質は削除（specsに保存しない）
+            if variant['材質'] in EXCLUDED_MATERIALS:
+                del variant['材質']
 
         # ★ フォールバックマッピング：高さ→身長、重さ→体重
         height_raw = variant.get('身長') or variant.get('高さ')
@@ -101,6 +127,9 @@ for product in products:
 
         for key, value in variant.items():
             if key == '大分類':
+                continue
+            # ★ 除外対象の材質はスキップ（安全のため二重チェック）
+            if key == '材質' and value in EXCLUDED_MATERIALS:
                 continue
             if isinstance(value, (list, dict)):
                 value = json.dumps(value, ensure_ascii=False)
