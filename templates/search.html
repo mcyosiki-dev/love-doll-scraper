@@ -282,47 +282,49 @@
                         <div class="filter-group">
                             <label>身長 (cm)</label>
                             <div class="slider-row">
-                                <span class="slider-value" id="h_min_d">{{ height_min or height_min_val }}</span>
+                                <span class="slider-value" id="h_min_d">{{ height_min | int if height_min else height_min_val }}</span>
                                 <input type="range" name="height_min" min="{{ height_min_val }}" max="{{ height_max_val }}" step="1" 
-                                       value="{{ height_min or height_min_val }}" 
+                                       value="{{ height_min | int if height_min else height_min_val }}" 
                                        oninput="document.getElementById('h_min_d').textContent=this.value">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="h_max_d">{{ height_max or height_max_val }}</span>
+                                <span class="slider-value" id="h_max_d">{{ height_max | int if height_max else height_max_val }}</span>
                                 <input type="range" name="height_max" min="{{ height_min_val }}" max="{{ height_max_val }}" step="1" 
-                                       value="{{ height_max or height_max_val }}" 
+                                       value="{{ height_max | int if height_max else height_max_val }}" 
                                        oninput="document.getElementById('h_max_d').textContent=this.value">
                             </div>
                         </div>
 
+                        <!-- 体重（修正済み：intフィルタ適用） -->
                         <div class="filter-group">
                             <label>体重 (kg)</label>
                             <div class="slider-row">
-                                <span class="slider-value" id="w_min_d">{{ weight_min or weight_min_val }}</span>
+                                <span class="slider-value" id="w_min_d">{{ weight_min | int if weight_min else weight_min_val }}</span>
                                 <input type="range" name="weight_min" min="{{ weight_min_val }}" max="70" step="1" 
-                                       value="{{ weight_min or weight_min_val }}" 
+                                       value="{{ weight_min | int if weight_min else weight_min_val }}" 
                                        oninput="document.getElementById('w_min_d').textContent=this.value">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="w_max_d">{{ weight_max if weight_max and weight_max <= 70 else 70 }}</span>
+                                <span class="slider-value" id="w_max_d">{{ weight_max | int if weight_max else 70 }}</span>
                                 <input type="range" name="weight_max" min="{{ weight_min_val }}" max="70" step="1" 
-                                       value="{{ weight_max if weight_max and weight_max <= 70 else 70 }}" 
+                                       value="{{ weight_max | int if weight_max else 70 }}" 
                                        oninput="document.getElementById('w_max_d').textContent=this.value">
                             </div>
                         </div>
 
+                        <!-- 足サイズ（修正済み：intフィルタ適用） -->
                         <div class="filter-group">
                             <label>足サイズ (cm)</label>
                             <div class="slider-row">
-                                <span class="slider-value" id="f_min_d">{{ foot_min or foot_min_val }}</span>
+                                <span class="slider-value" id="f_min_d">{{ foot_min | int if foot_min else foot_min_val }}</span>
                                 <input type="range" name="foot_min" min="{{ foot_min_val }}" max="30" step="1" 
-                                       value="{{ foot_min or foot_min_val }}" 
+                                       value="{{ foot_min | int if foot_min else foot_min_val }}" 
                                        oninput="document.getElementById('f_min_d').textContent=this.value">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="f_max_d">{{ foot_max if foot_max and foot_max <= 30 else 30 }}</span>
+                                <span class="slider-value" id="f_max_d">{{ foot_max | int if foot_max else 30 }}</span>
                                 <input type="range" name="foot_max" min="{{ foot_min_val }}" max="30" step="1" 
-                                       value="{{ foot_max if foot_max and foot_max <= 30 else 30 }}" 
+                                       value="{{ foot_max | int if foot_max else 30 }}" 
                                        oninput="document.getElementById('f_max_d').textContent=this.value">
                             </div>
                         </div>
@@ -330,15 +332,15 @@
                         <div class="filter-group">
                             <label>価格 (円)</label>
                             <div class="slider-row">
-                                <span class="slider-value" id="p_min_d">{{ price_min or price_min_val }}</span>
+                                <span class="slider-value" id="p_min_d">{{ price_min | int if price_min else price_min_val }}</span>
                                 <input type="range" name="price_min" min="{{ price_min_val }}" max="{{ price_max_val }}" step="1000" 
-                                       value="{{ price_min or price_min_val }}" 
+                                       value="{{ price_min | int if price_min else price_min_val }}" 
                                        oninput="document.getElementById('p_min_d').textContent=this.value">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="p_max_d">{{ price_max or price_max_val }}</span>
+                                <span class="slider-value" id="p_max_d">{{ price_max | int if price_max else price_max_val }}</span>
                                 <input type="range" name="price_max" min="{{ price_min_val }}" max="{{ price_max_val }}" step="1000" 
-                                       value="{{ price_max or price_max_val }}" 
+                                       value="{{ price_max | int if price_max else price_max_val }}" 
                                        oninput="document.getElementById('p_max_d').textContent=this.value">
                             </div>
                         </div>
@@ -361,7 +363,7 @@
                             </div>
                         </div>
 
-                        <!-- カテゴリ（表示順：女性型 → トルソー → オナホール → その他） -->
+                        <!-- カテゴリ（表示順固定） -->
                         <div class="filter-group">
                             <label class="form-label">カテゴリ</label>
                             <div class="checkbox-group">
