@@ -110,7 +110,6 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(42, 122, 158, 0.35);
         }
-
         .result-card {
             background: white;
             border: 2px solid #c0dce8;
@@ -123,7 +122,6 @@
             border-color: #4a9ec4;
             box-shadow: 0 6px 20px rgba(0,60,100,0.1);
         }
-
         .row-top {
             display: flex;
             justify-content: flex-start;
@@ -150,17 +148,20 @@
             font-weight: 700;
             font-size: 0.95rem;
             color: #1a3b4d;
+            word-break: break-word;
         }
         .product-price {
             font-weight: 700;
             font-size: 1.0rem;
             color: #dc3545;
+            white-space: nowrap;
         }
         .site-link-group {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-left: auto;
+            flex-wrap: wrap;
         }
         .product-site {
             font-weight: 500;
@@ -168,6 +169,7 @@
             font-size: 0.8rem;
             background: #e0f2fe;
             padding: 0 6px;
+            white-space: nowrap;
         }
         .product-url a {
             color: #2a7a9e;
@@ -177,7 +179,6 @@
             white-space: nowrap;
         }
         .product-url a:hover { text-decoration: underline; }
-
         .spec-keys {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
@@ -196,8 +197,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            word-break: break-word;
         }
-
         .spec-values {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
@@ -216,8 +217,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            word-break: break-word;
         }
-
         .result-header {
             display: flex;
             justify-content: space-between;
@@ -248,18 +249,71 @@
             border: 1px solid #c0dce8;
             background: white;
             font-size: 0.8rem;
+            max-width: 100%;
         }
 
+        /* モバイル表示崩れ改善（追加・修正） */
         @media (max-width: 1200px) {
             .spec-keys, .spec-values { grid-template-columns: repeat(6, 1fr); }
         }
+        @media (max-width: 992px) {
+            .sidebar { font-size: 0.65rem; padding: 10px 8px; }
+            .sidebar h5 { font-size: 0.8rem; }
+            .filter-group label { font-size: 0.65rem; }
+            .result-card { padding: 10px 12px; }
+        }
         @media (max-width: 768px) {
             .spec-keys, .spec-values { grid-template-columns: repeat(4, 1fr); }
-            .row-top { gap: 4px 8px; }
-            .site-link-group { margin-left: 0; width: 100%; justify-content: flex-end; }
+            .row-top {
+                gap: 4px 8px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .site-link-group {
+                margin-left: 0;
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+            .product-name {
+                font-size: 0.85rem;
+                width: 100%;
+            }
+            .product-price {
+                font-size: 0.9rem;
+            }
+            .tag-category, .tag-material {
+                font-size: 0.65rem;
+                padding: 1px 8px;
+            }
+            .spec-keys .cell, .spec-values .cell {
+                font-size: 0.65rem;
+                padding: 2px 4px;
+                min-height: 22px;
+            }
+            .sort-controls select {
+                font-size: 0.7rem;
+                padding: 2px 4px;
+            }
+            .result-count {
+                font-size: 0.85rem;
+            }
         }
         @media (max-width: 480px) {
             .spec-keys, .spec-values { grid-template-columns: repeat(2, 1fr); }
+            body { padding: 10px; }
+            .sidebar { padding: 8px 6px; }
+            .result-card { padding: 8px 10px; }
+            .product-name { font-size: 0.8rem; }
+            .product-price { font-size: 0.8rem; }
+            .btn-primary { font-size: 0.7rem; padding: 3px 8px; }
+            .site-link-group .product-site { font-size: 0.65rem; }
+            .site-link-group .product-url a { font-size: 0.65rem; }
+            .spec-keys .cell, .spec-values .cell {
+                font-size: 0.55rem;
+                padding: 2px 3px;
+                min-height: 18px;
+            }
         }
     </style>
 </head>
@@ -270,15 +324,12 @@
             <div class="col-lg-2 col-md-3">
                 <div class="sidebar">
                     <h5><i class="bi bi-sliders2 me-1"></i>検索</h5>
-
                     <form method="GET" action="{{ url_for('search') }}">
                         <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>検索</button>
-
                         <div class="filter-group">
                             <label for="keyword" class="form-label">キーワード</label>
                             <input type="text" class="form-control form-control-sm" id="keyword" name="keyword" value="{{ keyword }}" placeholder="商品名">
                         </div>
-
                         <div class="filter-group">
                             <label>身長 (cm)</label>
                             <div class="slider-row">
@@ -294,8 +345,6 @@
                                        oninput="document.getElementById('h_max_d').textContent=this.value">
                             </div>
                         </div>
-
-                        <!-- 体重（修正済み：intフィルタ適用） -->
                         <div class="filter-group">
                             <label>体重 (kg)</label>
                             <div class="slider-row">
@@ -311,8 +360,6 @@
                                        oninput="document.getElementById('w_max_d').textContent=this.value">
                             </div>
                         </div>
-
-                        <!-- 足サイズ（修正済み：intフィルタ適用） -->
                         <div class="filter-group">
                             <label>足サイズ (cm)</label>
                             <div class="slider-row">
@@ -328,23 +375,22 @@
                                        oninput="document.getElementById('f_max_d').textContent=this.value">
                             </div>
                         </div>
-
+                        <!-- 価格（万円表示） -->
                         <div class="filter-group">
-                            <label>価格 (円)</label>
+                            <label>価格 (万円)</label>
                             <div class="slider-row">
-                                <span class="slider-value" id="p_min_d">{{ price_min | int if price_min else price_min_val }}</span>
-                                <input type="range" name="price_min" min="{{ price_min_val }}" max="{{ price_max_val }}" step="1000" 
+                                <span class="slider-value" id="p_min_d">{{ (price_min | int if price_min else price_min_val) // 10000 }}</span>
+                                <input type="range" name="price_min" min="{{ price_min_val }}" max="{{ price_max_val }}" step="10000" 
                                        value="{{ price_min | int if price_min else price_min_val }}" 
-                                       oninput="document.getElementById('p_min_d').textContent=this.value">
+                                       oninput="document.getElementById('p_min_d').textContent=Math.floor(this.value/10000)">
                             </div>
                             <div class="slider-row">
-                                <span class="slider-value" id="p_max_d">{{ price_max | int if price_max else price_max_val }}</span>
-                                <input type="range" name="price_max" min="{{ price_min_val }}" max="{{ price_max_val }}" step="1000" 
+                                <span class="slider-value" id="p_max_d">{{ (price_max | int if price_max else price_max_val) // 10000 }}</span>
+                                <input type="range" name="price_max" min="{{ price_min_val }}" max="{{ price_max_val }}" step="10000" 
                                        value="{{ price_max | int if price_max else price_max_val }}" 
-                                       oninput="document.getElementById('p_max_d').textContent=this.value">
+                                       oninput="document.getElementById('p_max_d').textContent=Math.floor(this.value/10000)">
                             </div>
                         </div>
-
                         <!-- カップ数 + M以上 -->
                         <div class="filter-group">
                             <label class="form-label">カップ数</label>
@@ -362,8 +408,7 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- カテゴリ（表示順固定） -->
+                        <!-- カテゴリ -->
                         <div class="filter-group">
                             <label class="form-label">カテゴリ</label>
                             <div class="checkbox-group">
@@ -388,7 +433,6 @@
                                 {% endfor %}
                             </div>
                         </div>
-
                         <div class="filter-group">
                             <label class="form-label">材質</label>
                             <div class="checkbox-group">
@@ -401,7 +445,6 @@
                                 {% endfor %}
                             </div>
                         </div>
-
                     </form>
                 </div>
             </div>
@@ -412,7 +455,7 @@
                     <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件</span>
                     <div class="sort-controls">
                         <label for="sortSelect"><i class="bi bi-arrow-up-down me-1"></i>並び替え</label>
-                        <select id="sortSelect" onchange="this.form.submit()" name="sort_by" form="searchForm">
+                        <select id="sortSelect" onchange="document.getElementById('searchForm').submit()" name="sort_by" form="searchForm">
                             <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>価格が安い順</option>
                             <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>価格が高い順</option>
                             <option value="height_asc" {% if sort_by == 'height_asc' %}selected{% endif %}>身長が低い順</option>
@@ -421,6 +464,8 @@
                             <option value="weight_desc" {% if sort_by == 'weight_desc' %}selected{% endif %}>体重が重い順</option>
                             <option value="bust_asc" {% if sort_by == 'bust_asc' %}selected{% endif %}>バストが小さい順</option>
                             <option value="bust_desc" {% if sort_by == 'bust_desc' %}selected{% endif %}>バストが大きい順</option>
+                            <option value="cup_asc" {% if sort_by == 'cup_asc' %}selected{% endif %}>カップ数が小さい順</option>
+                            <option value="cup_desc" {% if sort_by == 'cup_desc' %}selected{% endif %}>カップ数が大きい順</option>
                         </select>
                     </div>
                 </div>
@@ -486,8 +531,22 @@
                     </div>
                     {% endfor %}
                 {% else %}
+                    <!-- 0件時メッセージ改善（タスク①で修正済み） -->
                     <div class="alert alert-info text-center" role="alert">
                         <i class="bi bi-search-heart me-2"></i>該当する商品がありません。
+                        <div class="mt-2">
+                            <small>
+                                ヒント：キーワードを変えるか、<a href="{{ url_for('search') }}" class="alert-link">フィルタをリセット</a>してお試しください。
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                おすすめ検索ワード：
+                                <span class="badge bg-secondary">シリコン</span>
+                                <span class="badge bg-secondary">女性型</span>
+                                <span class="badge bg-secondary">150cm</span>
+                                <span class="badge bg-secondary">5万円</span>
+                            </small>
+                        </div>
                     </div>
                 {% endif %}
             </div>
