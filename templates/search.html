@@ -181,7 +181,6 @@
         }
         .product-url a:hover { text-decoration: underline; }
 
-        /* スペック表（背景色を白に変更＋文字サイズ拡大＋コントラスト改善） */
         .spec-keys {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
@@ -189,7 +188,7 @@
             margin-top: 12px;
         }
         .spec-keys .cell {
-            background: #e9ecef; /* 濃いめのグレーでキーを目立たせる */
+            background: #e9ecef;
             border: 1px solid #b8c8d8;
             padding: 6px 8px;
             text-align: center;
@@ -209,7 +208,7 @@
             margin-top: 2px;
         }
         .spec-values .cell {
-            background: #ffffff; /* 白背景で見やすく */
+            background: #ffffff;
             border: 1px solid #b8c8d8;
             padding: 6px 8px;
             text-align: center;
@@ -256,7 +255,6 @@
             max-width: 100%;
         }
 
-        /* モバイル対応（文字サイズも調整） */
         @media (max-width: 1200px) {
             .spec-keys, .spec-values { grid-template-columns: repeat(6, 1fr); }
         }
@@ -311,7 +309,6 @@
 <body>
     <div class="container-fluid">
         <div class="row g-3">
-            <!-- サイドバー -->
             <div class="col-lg-2 col-md-3">
                 <div class="sidebar">
                     <h5><i class="bi bi-sliders2 me-1"></i>検索</h5>
@@ -366,7 +363,6 @@
                                        oninput="document.getElementById('f_max_d').textContent=this.value">
                             </div>
                         </div>
-                        <!-- 価格（万円表示） -->
                         <div class="filter-group">
                             <label>価格 (万円)</label>
                             <div class="slider-row">
@@ -382,7 +378,6 @@
                                        oninput="document.getElementById('p_max_d').textContent=Math.floor(this.value/10000)">
                             </div>
                         </div>
-                        <!-- カップ数 + M以上 -->
                         <div class="filter-group">
                             <label class="form-label">カップ数</label>
                             <div class="checkbox-group">
@@ -399,7 +394,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- カテゴリ -->
                         <div class="filter-group">
                             <label class="form-label">カテゴリ</label>
                             <div class="checkbox-group">
@@ -440,7 +434,6 @@
                 </div>
             </div>
 
-            <!-- 結果表示 -->
             <div class="col-lg-10 col-md-9">
                 <div class="result-header">
                     <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件</span>
@@ -506,23 +499,22 @@
                         </div>
 
                         <div class="spec-values">
-                            <div class="cell">{{ row.height or '-' }}{% if row.height %} cm{% endif %}</div>
-                            <div class="cell">{{ row.weight or '-' }}{% if row.weight %} kg{% endif %}</div>
+                            <div class="cell">{{ row.height or '-' }}{% if row.height and row.height != '-' and 'cm' not in row.height|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.weight or '-' }}{% if row.weight and row.weight != '-' and 'kg' not in row.weight|string %} kg{% endif %}</div>
                             <div class="cell">{{ row.cup or '-' }}</div>
-                            <div class="cell">{{ row.bust or '-' }}{% if row.bust %} cm{% endif %}</div>
-                            <div class="cell">{{ row.under_bust or '-' }}{% if row.under_bust %} cm{% endif %}</div>
-                            <div class="cell">{{ row.waist or '-' }}{% if row.waist %} cm{% endif %}</div>
-                            <div class="cell">{{ row.hip or '-' }}{% if row.hip %} cm{% endif %}</div>
-                            <div class="cell">{{ row.shoulder or '-' }}{% if row.shoulder %} cm{% endif %}</div>
-                            <div class="cell">{{ row.foot or '-' }}{% if row.foot %} cm{% endif %}</div>
-                            <div class="cell">{{ row.vagina_depth or '-' }}{% if row.vagina_depth %} cm{% endif %}</div>
-                            <div class="cell">{{ row.anal_depth or '-' }}{% if row.anal_depth %} cm{% endif %}</div>
-                            <div class="cell">{{ row.mouth_depth or '-' }}{% if row.mouth_depth %} cm{% endif %}</div>
+                            <div class="cell">{{ row.bust or '-' }}{% if row.bust and row.bust != '-' and 'cm' not in row.bust|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.under_bust or '-' }}{% if row.under_bust and row.under_bust != '-' and 'cm' not in row.under_bust|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.waist or '-' }}{% if row.waist and row.waist != '-' and 'cm' not in row.waist|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.hip or '-' }}{% if row.hip and row.hip != '-' and 'cm' not in row.hip|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.shoulder or '-' }}{% if row.shoulder and row.shoulder != '-' and 'cm' not in row.shoulder|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.foot or '-' }}{% if row.foot and row.foot != '-' and 'cm' not in row.foot|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.vagina_depth or '-' }}{% if row.vagina_depth and row.vagina_depth != '-' and 'cm' not in row.vagina_depth|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.anal_depth or '-' }}{% if row.anal_depth and row.anal_depth != '-' and 'cm' not in row.anal_depth|string %} cm{% endif %}</div>
+                            <div class="cell">{{ row.mouth_depth or '-' }}{% if row.mouth_depth and row.mouth_depth != '-' and 'cm' not in row.mouth_depth|string %} cm{% endif %}</div>
                         </div>
                     </div>
                     {% endfor %}
                 {% else %}
-                    <!-- 0件時メッセージ改善 -->
                     <div class="alert alert-info text-center" role="alert">
                         <i class="bi bi-search-heart me-2"></i>該当する商品がありません。
                         <div class="mt-2">
