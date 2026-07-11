@@ -14,3 +14,167 @@ Call log:
 Call log:
   - navigating to "https://yourdoll.jp/product/esb056-rad-sayuri-148cm-silicon-love-doll-d/", waiting until "load"
 
+2026-07-10 02:54:46 | https://yourdoll.jp/product/asd314-lovedoll/ | Page.goto: net::ERR_NETWORK_CHANGED at https://yourdoll.jp/product/asd314-lovedoll/
+Call log:
+  - navigating to "https://yourdoll.jp/product/asd314-lovedoll/", waiting until "load"
+
+2026-07-10 02:55:53 | https://yourdoll.jp/product/ero002-lovedoll/ | Page.goto: net::ERR_INTERNET_DISCONNECTED at https://yourdoll.jp/product/ero002-lovedoll/
+Call log:
+  - navigating to "https://yourdoll.jp/product/ero002-lovedoll/", waiting until "load"
+
+2026-07-10 02:55:58 | https://yourdoll.jp/product/yhd023-lovedoll/ | Page.goto: net::ERR_NETWORK_CHANGED at https://yourdoll.jp/product/yhd023-lovedoll/
+Call log:
+  - navigating to "https://yourdoll.jp/product/yhd023-lovedoll/", waiting until "load"
+
+2026-07-10 19:48:45 | https://www.ramondoll.com/product-p2440452.html | Page.reload: Timeout 30000ms exceeded.
+Call log:
+  - waiting for navigation until "networkidle"
+    - navigated to "https://www.ramondoll.com/product-p2440452.html"
+
+2026-07-10 19:52:15 | https://www.ramondoll.com/product-p2440452.html | Page.goto: Timeout 60000ms exceeded.
+Call log:
+  - navigating to "https://www.ramondoll.com/product-p2440452.html", waiting until "networkidle"
+
+2026-07-10 20:00:13 | https://www.ramondoll.com/product-p2440452.html | Page.goto: Timeout 60000ms exceeded.
+Call log:
+  - navigating to "https://www.ramondoll.com/product-p2440452.html", waiting until "networkidle"
+
+2026-07-10 20:38:50 | https://www.ramondoll.com/product-p2440452.html | 404エラーが継続
+2026-07-10 22:43:00 | https://www.angeldoll.jp/anime-swimsuit-cute-dutchwife-doll | HTTP 404
+2026-07-11 14:10:37 | # -*- coding: utf-8 -*- | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# -*- coding: utf-8 -*-", waiting until "domcontentloaded"
+
+2026-07-11 14:10:39 | # -*- coding: utf-8 -*- | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# -*- coding: utf-8 -*-", waiting until "domcontentloaded"
+
+2026-07-11 14:10:42 | # -*- coding: utf-8 -*- | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# -*- coding: utf-8 -*-", waiting until "domcontentloaded"
+
+2026-07-11 14:10:43 | import asyncio | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import asyncio", waiting until "domcontentloaded"
+
+2026-07-11 14:10:45 | import asyncio | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import asyncio", waiting until "domcontentloaded"
+
+2026-07-11 14:10:48 | import asyncio | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import asyncio", waiting until "domcontentloaded"
+
+2026-07-11 14:10:49 | import json | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import json", waiting until "domcontentloaded"
+
+2026-07-11 14:10:51 | import json | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import json", waiting until "domcontentloaded"
+
+2026-07-11 14:10:54 | import json | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import json", waiting until "domcontentloaded"
+
+2026-07-11 14:10:55 | import sys | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import sys", waiting until "domcontentloaded"
+
+2026-07-11 14:10:57 | import sys | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import sys", waiting until "domcontentloaded"
+
+2026-07-11 14:11:00 | import sys | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "import sys", waiting until "domcontentloaded"
+
+2026-07-11 14:11:01 | from pathlib import Path | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "from pathlib import Path", waiting until "domcontentloaded"
+
+2026-07-11 14:11:03 | from pathlib import Path | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "from pathlib import Path", waiting until "domcontentloaded"
+
+2026-07-11 14:11:06 | from pathlib import Path | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "from pathlib import Path", waiting until "domcontentloaded"
+
+2026-07-11 14:11:07 | from run_all_scrapers import scrape_one, load_processed_urls, OUTPUT_FILE | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "from run_all_scrapers import scrape_one, load_processed_urls, OUTPUT_FILE", waiting until "domcontentloaded"
+
+2026-07-11 14:11:09 | from run_all_scrapers import scrape_one, load_processed_urls, OUTPUT_FILE | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "from run_all_scrapers import scrape_one, load_processed_urls, OUTPUT_FILE", waiting until "domcontentloaded"
+
+2026-07-11 14:11:12 | from run_all_scrapers import scrape_one, load_processed_urls, OUTPUT_FILE | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "from run_all_scrapers import scrape_one, load_processed_urls, OUTPUT_FILE", waiting until "domcontentloaded"
+
+2026-07-11 14:11:13 | async def main(): | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "async def main():", waiting until "domcontentloaded"
+
+2026-07-11 14:11:15 | async def main(): | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "async def main():", waiting until "domcontentloaded"
+
+2026-07-11 14:11:18 | async def main(): | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "async def main():", waiting until "domcontentloaded"
+
+2026-07-11 14:11:19 | # 既存のall_data.jsonから既処理URLを読み込む | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# 既存のall_data.jsonから既処理URLを読み込む", waiting until "domcontentloaded"
+
+2026-07-11 14:11:21 | # 既存のall_data.jsonから既処理URLを読み込む | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# 既存のall_data.jsonから既処理URLを読み込む", waiting until "domcontentloaded"
+
+2026-07-11 14:11:24 | # 既存のall_data.jsonから既処理URLを読み込む | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# 既存のall_data.jsonから既処理URLを読み込む", waiting until "domcontentloaded"
+
+2026-07-11 14:11:26 | processed = load_processed_urls() | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "processed = load_processed_urls()", waiting until "domcontentloaded"
+
+2026-07-11 14:11:27 | processed = load_processed_urls() | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "processed = load_processed_urls()", waiting until "domcontentloaded"
+
+2026-07-11 14:11:30 | processed = load_processed_urls() | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "processed = load_processed_urls()", waiting until "domcontentloaded"
+
+2026-07-11 14:11:32 | # orient_urls.txt からURLを読み込む | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# orient_urls.txt からURLを読み込む", waiting until "domcontentloaded"
+
+2026-07-11 14:11:33 | # orient_urls.txt からURLを読み込む | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# orient_urls.txt からURLを読み込む", waiting until "domcontentloaded"
+
+2026-07-11 14:11:36 | # orient_urls.txt からURLを読み込む | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "# orient_urls.txt からURLを読み込む", waiting until "domcontentloaded"
+
+2026-07-11 14:11:38 | url_file = Path(__file__).resolve().parent / 'orient_urls.txt' | 試行 1 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "url_file = Path(__file__).resolve().parent / 'orient_urls.txt'", waiting until "domcontentloaded"
+
+2026-07-11 14:11:39 | url_file = Path(__file__).resolve().parent / 'orient_urls.txt' | 試行 2 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "url_file = Path(__file__).resolve().parent / 'orient_urls.txt'", waiting until "domcontentloaded"
+
+2026-07-11 14:11:42 | url_file = Path(__file__).resolve().parent / 'orient_urls.txt' | 試行 3 エラー: Page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "url_file = Path(__file__).resolve().parent / 'orient_urls.txt'", waiting until "domcontentloaded"
+
+2026-07-11 14:27:21 | https://www.orient-doll.com/product/%E3%81%86%E3%81%95%E3%81%8E%E3%81%8C%E4%B8%98%E7%A7%98%E5%AF%86%E3%83%89%E3%83%BC%E3%83%AB/ | HTTP 404
+2026-07-11 18:03:25 | https://yourdoll.jp/product/sea001-lovedoll/ | 試行 1 エラー: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to "https://yourdoll.jp/product/sea001-lovedoll/", waiting until "networkidle"
+

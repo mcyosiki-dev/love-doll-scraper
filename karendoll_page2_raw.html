@@ -1,0 +1,129 @@
+# -*- coding: utf-8 -*-
+"""
+karendoll.com の collect_urls 関数（無限スクロール対応版）
+商品一覧はスクロールで動的に読み込まれるため、スクロールを繰り返して全商品を収集する。
+"""
+import asyncio
+import re
+from playwright.async_api import async_playwright
+from bs4 import BeautifulSoup
+
+async def collect_urls_karendoll(max_pages=None):
+    """
+    Karendoll（https://www.karendoll.com/）の商品URLを収集する。
+    無限スクロール対応：ページをスクロールして全ての商品を読み込む。
+    max_pages はスクロールの繰り返し回数として解釈（デフォルトは10回まで）。
+    """
+    collected = set()
+    base_url = "https://www.karendoll.com/shop/"
+    
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        
+        await page.set_extra_http_headers({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7',
+        })
+        
+        # 画像・フォントブロック（高速化）
+        async def route_handler(route):
+            if route.request.resource_type in ('image', 'media', 'font'):
+                await route.abort()
+            else:
+                await route.continue_()
+        await page.route('**/*', route_handler)
+        
+        print(f"  🔍 karendoll ページを開きます: {base_url}")
+        try:
+            await page.goto(base_url, timeout=45000, wait_until='domcontentloaded')
+            await page.wait_for_timeout(20000)
+        except Exception as e:
+            print(f"    ⚠️ ページ読み込み失敗: {e}")
+            await browser.close()
+            return collected
+        
+        # 商品コンテナが表示されるまで待機
+        try:
+            await page.wait_for_selector('.product-image-link', timeout=10000)
+        except:
+            print("    ⚠️ 商品リンクが見つかりません")
+            await browser.close()
+            return collected
+        
+        # スクロールで商品を読み込む（最大10回まで、または商品数が増えなくなるまで）
+        scroll_count = 0
+        max_scrolls = max_pages if max_pages else 10
+        prev_count = 0
+        
+        while scroll_count < max_scrolls:
+            # 現在の商品リンク数を取得
+            links = await page.query_selector_all('.product-image-link')
+            current_count = len(links)
+            print(f"    📊 現在の商品数: {current_count}")
+            
+            if current_count == prev_count and scroll_count > 0:
+                # 商品数が増えなくなったら終了
+                print(f"    ⏹️ 商品数が増えなくなったため終了（{scroll_count}回スクロール）")
+                break
+            
+            prev_count = current_count
+            
+            # ページ下部までスクロール
+            await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+            await page.wait_for_timeout(2000)  # 読み込み待ち
+            
+            scroll_count += 1
+            print(f"    🔽 {scroll_count}回スクロール実行")
+        
+        # 最終的なHTMLを取得
+        html = await page.content()
+        await browser.close()
+        
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # 商品リンクを抽出（.product-image-link または /product/ を含むaタグ）
+        links = soup.select('a.product-image-link')
+        if not links:
+            all_links = soup.find_all('a', href=True)
+            links = [a for a in all_links if '/product/' in a.get('href', '')]
+        
+        for a in links:
+            href = a.get('href')
+            if not href:
+                continue
+            if href.startswith('/'):
+                full_url = "https://www.karendoll.com" + href
+            elif href.startswith('http'):
+                full_url = href
+            else:
+                continue
+            full_url = re.sub(r'\?.*$', '', full_url)
+            collected.add(full_url)
+        
+        print(f"    ✅ 合計 {len(collected)} 件の商品URLを収集")
+        return collected
+
+async def main():
+    print("=" * 60)
+    print("🧪 karendoll.com の collect_urls 関数をテスト（無限スクロール対応）")
+    print("=" * 60)
+    
+    # 最大5回までスクロール（テスト用）
+    urls = await collect_urls_karendoll(max_pages=5)
+    
+    print("\n" + "=" * 60)
+    print(f"📊 収集結果: {len(urls)} 件")
+    print("=" * 60)
+    
+    if urls:
+        print("\n📋 収集されたURLのサンプル（最初の10件）:")
+        for i, url in enumerate(list(urls)[:10], 1):
+            print(f"  {i}. {url}")
+        if len(urls) > 10:
+            print(f"  ... 他 {len(urls) - 10} 件")
+    else:
+        print("❌ 収集に失敗しました。")
+
+if __name__ == "__main__":
+    asyncio.run(main())

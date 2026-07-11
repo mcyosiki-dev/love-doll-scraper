@@ -1,8 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
 import sqlite3
 import re
 import os
-from datetime import datetime, timedelta
 from functools import lru_cache
 
 app = Flask(__name__)
@@ -46,7 +45,7 @@ def create_indexes():
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"⚠️ インデックス作成スキップ: {e}")
+        print(f"インデックス作成エラー: {e}")
 
 create_indexes()
 
@@ -115,7 +114,7 @@ def search():
     c = conn.cursor()
 
     query = '''
-        SELECT 
+        SELECT
             p.id, p.name, p.price, p.url, p.category,
             p.height_cm AS height,
             p.weight_kg AS weight,
@@ -171,7 +170,6 @@ def search():
 
     query += ' GROUP BY p.id'
 
-    # HAVING 句（集約条件はすべてこちらに移動）
     having_conditions = []
 
     if selected_cups:
@@ -181,8 +179,8 @@ def search():
 
     if cup_m_or_more:
         having_conditions.append('''
-            MAX(CASE WHEN s.spec_key = "カップ数" THEN 
-                CASE 
+            MAX(CASE WHEN s.spec_key = "カップ数" THEN
+                CASE
                     WHEN s.spec_value LIKE '%M%' THEN 13
                     WHEN s.spec_value LIKE '%N%' THEN 14
                     WHEN s.spec_value LIKE '%O%' THEN 15
@@ -197,7 +195,7 @@ def search():
                     WHEN s.spec_value LIKE '%X%' THEN 24
                     WHEN s.spec_value LIKE '%Y%' THEN 25
                     WHEN s.spec_value LIKE '%Z%' THEN 26
-                    WHEN s.spec_value LIKE '%G以上%' THEN 7
+                    WHEN s.spec_value LIKE '%G以上' THEN 7
                     WHEN s.spec_value LIKE '%H%' THEN 8
                     WHEN s.spec_value LIKE '%I%' THEN 9
                     WHEN s.spec_value LIKE '%J%' THEN 10
@@ -211,7 +209,7 @@ def search():
                     WHEN s.spec_value LIKE '%A%' THEN 1
                     WHEN s.spec_value LIKE '%AA%' THEN 0
                     ELSE 0
-                END 
+                END
             END) >= 13
         ''')
 
@@ -223,6 +221,26 @@ def search():
     if having_conditions:
         query += ' HAVING ' + ' AND '.join(having_conditions)
 
+    cup_order_case = '''
+        CASE
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'AA' THEN 0
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'A' THEN 1
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'B' THEN 2
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'C' THEN 3
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'D' THEN 4
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'E' THEN 5
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'F' THEN 6
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'G' THEN 7
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'H' THEN 8
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'I' THEN 9
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'J' THEN 10
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'K' THEN 11
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'L' THEN 12
+            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'M以上' THEN 13
+            ELSE 99
+        END
+    '''
+
     sort_map = {
         'price_asc': ('p.price_int ASC', 'price'),
         'price_desc': ('p.price_int DESC', 'price'),
@@ -232,6 +250,8 @@ def search():
         'weight_desc': ('p.weight_kg DESC', 'weight'),
         'bust_asc': ('MAX(CASE WHEN s.spec_key = "バスト" THEN CAST(REPLACE(s.spec_value, "cm", "") AS REAL) END) ASC', 'bust'),
         'bust_desc': ('MAX(CASE WHEN s.spec_key = "バスト" THEN CAST(REPLACE(s.spec_value, "cm", "") AS REAL) END) DESC', 'bust'),
+        'cup_asc': (f'{cup_order_case} ASC', 'cup'),
+        'cup_desc': (f'{cup_order_case} DESC', 'cup'),
     }
     if sort_by in sort_map:
         order_clause, _ = sort_map[sort_by]
@@ -323,6 +343,10 @@ def verify_exoclick():
 @app.route('/8823b79722a732180d4e970ca4900eb4.html')
 def verify_exoclick_new():
     return "8823b79722a732180d4e970ca4900eb4"
+
+@app.route('/sitemap.xml')
+def sitemap():
+    return send_from_directory('static', 'sitemap.xml')
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -10,44 +10,21 @@ def extract_num(val):
         return float(match.group(1))
     return None
 
-# ★【2026-07-04 修正】材質正規化マッピング（WebAI様からの確定版・再修正）
-MATERIAL_MAPPING = {
-    # 基本素材（単独）
-    'シリコン': 'シリコン',
-    'フルシリコン': 'シリコン',
-    'シリコン製': 'シリコン',
-    'シリコンボディ': 'シリコン',
-    'TPE': 'TPE',
-    'TPE製': 'TPE',
-    'STPE': 'S-TPE',
-    'S-TPE': 'S-TPE',
-    'PVC': 'PVC',
-    'レジン': 'レジン',
-    # 組み合わせ（+表記） → すべて「シリコン+TPE」に統一
-    'シリコン+TPE': 'シリコン+TPE',
-    'シリコン＋TPE': 'シリコン+TPE',
-    'シリコン＆TPE': 'シリコン+TPE',
-    'シリコン&TPE': 'シリコン+TPE',
-    'Silicon+TPE': 'シリコン+TPE',
-    'TPE+シリコン': 'シリコン+TPE',
-    'TPE製＋シリコン製': 'シリコン+TPE',
-    'silicon head+TPE body': 'シリコン+TPE',
-    'シリコンヘッド+TPEボディ': 'シリコン+TPE',
-    'シリコンヘッド＋TPEボディ': 'シリコン+TPE',
-    'シリコンヘッド + TPEボディ': 'シリコン+TPE',
-    # シリコン + S-TPE
-    'シリコン+S-TPE': 'シリコン+S-TPE',
-    'Silicon/Silicon+TPE': 'シリコン+S-TPE',
-    # PVC + シリコン
-    'PVC+シリコン': 'PVC+シリコン',
-    'シリコンボディ＋PVC頭部': 'PVC+シリコン',
-    # PVC + TPE
-    'PVC+TPE': 'PVC+TPE',
-    # レジン + シリコン
-    'レジン＋silicon': 'レジン+シリコン',
+# カップ数正規化マッピング
+CUP_NORMALIZE = {
+    'AA': 'AA', 'A': 'A', 'B': 'B', 'C': 'C', 'D': 'D', 'E': 'E', 'F': 'F',
+    'G': 'G', 'G以上': 'G', 'Gカップ': 'G',
+    'H': 'H', 'I': 'I', 'J': 'J', 'K': 'K', 'L': 'L',
+    'M以上': 'M以上', 'M': 'M以上',
 }
 
-# ★ 材質フィルタから除外する値（ノイズ）
+# 材質マッピング（既存）
+MATERIAL_MAPPING = {
+    'シリコン': 'シリコン',
+    'シリコン+TPE': 'シリコン+TPE',
+    # 必要に応じて追加
+}
+
 EXCLUDED_MATERIALS = ['身長']
 
 with open('all_data.json', 'r', encoding='utf-8') as f:
@@ -59,6 +36,7 @@ cursor = conn.cursor()
 cursor.execute('DROP TABLE IF EXISTS specs')
 cursor.execute('DROP TABLE IF EXISTS products')
 
+# ★ 2026-07-09 カラム追加：manufacturer, site_product_id（image_urlは非収集）
 cursor.execute('''
     CREATE TABLE products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,7 +47,9 @@ cursor.execute('''
         height_cm REAL,
         weight_kg REAL,
         foot_cm REAL,
-        price_int INTEGER
+        price_int INTEGER,
+        manufacturer TEXT,
+        site_product_id TEXT
     )
 ''')
 
@@ -90,22 +70,29 @@ for product in products:
     price = product.get('価格', '')
     url = product.get('商品URL', '')
     variants = product.get('スペックバリエーション', [])
+    manufacturer = product.get('manufacturer', None)
+    site_product_id = product.get('site_product_id', None)
+    
     if not variants:
         continue
 
     for variant in variants:
         category = variant.get('大分類', '不明')
 
-        # ★ 材質を正規化
+        # 材質正規化
         if '材質' in variant:
             raw_material = variant['材質']
             if raw_material in MATERIAL_MAPPING:
                 variant['材質'] = MATERIAL_MAPPING[raw_material]
-            # ★ 除外対象の材質は削除（specsに保存しない）
             if variant['材質'] in EXCLUDED_MATERIALS:
                 del variant['材質']
 
-        # ★ フォールバックマッピング：高さ→身長、重さ→体重
+        # カップ数正規化
+        if 'カップ数' in variant:
+            raw_cup = variant['カップ数']
+            if raw_cup in CUP_NORMALIZE:
+                variant['カップ数'] = CUP_NORMALIZE[raw_cup]
+
         height_raw = variant.get('身長') or variant.get('高さ')
         weight_raw = variant.get('体重') or variant.get('重さ')
         foot_raw = variant.get('足のサイズ') or variant.get('足サイズ')
@@ -117,18 +104,22 @@ for product in products:
 
         try:
             cursor.execute('''
-                INSERT INTO products (name, price, url, category, height_cm, weight_kg, foot_cm, price_int)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (name, price, url, category, height_cm, weight_kg, foot_cm, price_int))
+                INSERT INTO products (
+                    name, price, url, category,
+                    height_cm, weight_kg, foot_cm, price_int,
+                    manufacturer, site_product_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (name, price, url, category,
+                  height_cm, weight_kg, foot_cm, price_int,
+                  manufacturer, site_product_id))
             product_id = cursor.lastrowid
         except Exception as e:
-            print(f"⚠️ 商品挿入エラー: {e} (URL: {url})")
+            print(f"商品挿入エラー: {e} (URL: {url})")
             continue
 
         for key, value in variant.items():
             if key == '大分類':
                 continue
-            # ★ 除外対象の材質はスキップ（安全のため二重チェック）
             if key == '材質' and value in EXCLUDED_MATERIALS:
                 continue
             if isinstance(value, (list, dict)):
@@ -141,7 +132,7 @@ for product in products:
                     VALUES (?, ?, ?)
                 ''', (product_id, key, value))
             except Exception as e:
-                print(f"⚠️ スペック挿入エラー: {e} (キー: {key})")
+                print(f"スペック挿入エラー: {e} (キー: {key})")
         total_variants += 1
 
 conn.commit()
