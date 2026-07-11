@@ -499,18 +499,52 @@
                         </div>
 
                         <div class="spec-values">
-                            <div class="cell">{{ row.height or '-' }}{% if row.height and row.height != '-' and 'cm' not in row.height|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.weight or '-' }}{% if row.weight and row.weight != '-' and 'kg' not in row.weight|string %} kg{% endif %}</div>
+                            <!-- 単位追加条件を統一：数値でないもの・無し・なし・cm/kg含むものは追記しない -->
+                            <div class="cell">
+                                {% set val = row.height or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.weight or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} kg{% endif %}
+                            </div>
                             <div class="cell">{{ row.cup or '-' }}</div>
-                            <div class="cell">{{ row.bust or '-' }}{% if row.bust and row.bust != '-' and 'cm' not in row.bust|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.under_bust or '-' }}{% if row.under_bust and row.under_bust != '-' and 'cm' not in row.under_bust|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.waist or '-' }}{% if row.waist and row.waist != '-' and 'cm' not in row.waist|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.hip or '-' }}{% if row.hip and row.hip != '-' and 'cm' not in row.hip|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.shoulder or '-' }}{% if row.shoulder and row.shoulder != '-' and 'cm' not in row.shoulder|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.foot or '-' }}{% if row.foot and row.foot != '-' and 'cm' not in row.foot|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.vagina_depth or '-' }}{% if row.vagina_depth and row.vagina_depth != '-' and 'cm' not in row.vagina_depth|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.anal_depth or '-' }}{% if row.anal_depth and row.anal_depth != '-' and 'cm' not in row.anal_depth|string %} cm{% endif %}</div>
-                            <div class="cell">{{ row.mouth_depth or '-' }}{% if row.mouth_depth and row.mouth_depth != '-' and 'cm' not in row.mouth_depth|string %} cm{% endif %}</div>
+                            <div class="cell">
+                                {% set val = row.bust or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.under_bust or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.waist or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.hip or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.shoulder or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.foot or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.vagina_depth or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.anal_depth or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
+                            <div class="cell">
+                                {% set val = row.mouth_depth or '-' %}
+                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
