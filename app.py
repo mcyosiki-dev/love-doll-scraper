@@ -10,16 +10,34 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-producti
 CUP_ORDER = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 PER_PAGE = 30
 
+# ============================================================
+# ★ アフィリエイト用環境変数
+# ============================================================
+YOURDOLL_REF = os.environ.get('YOURDOLL_REF', '')
+
+
+# ============================================================
+# ★ テンプレートで config.YOURDOLL_REF として参照可能にする
+# ============================================================
+@app.context_processor
+def inject_config():
+    return dict(config={
+        'YOURDOLL_REF': YOURDOLL_REF,
+    })
+
+
 def get_db_connection():
     conn = sqlite3.connect('dolls.db')
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def extract_site_name(url):
     if not url:
         return ''
     domain = re.sub(r'^https?://(www\.)?', '', url)
     return domain.split('/')[0]
+
 
 def create_indexes():
     try:
@@ -47,7 +65,9 @@ def create_indexes():
     except Exception as e:
         print(f"インデックス作成エラー: {e}")
 
+
 create_indexes()
+
 
 @lru_cache(maxsize=1)
 def get_all_categories():
@@ -58,6 +78,7 @@ def get_all_categories():
     conn.close()
     return rows
 
+
 @lru_cache(maxsize=1)
 def get_all_materials():
     conn = get_db_connection()
@@ -67,9 +88,11 @@ def get_all_materials():
     conn.close()
     return rows
 
+
 @app.route('/')
 def top():
     return render_template('top.html')
+
 
 @app.route('/age-verify', methods=['POST'])
 def age_verify():
@@ -80,13 +103,16 @@ def age_verify():
     else:
         return render_template('age_denied.html')
 
+
 @app.route('/legal')
 def legal():
     return render_template('legal.html')
 
+
 @app.route('/privacy')
 def privacy():
     return render_template('privacy.html')
+
 
 @app.route('/search', methods=['GET'])
 def search():
@@ -336,17 +362,21 @@ def search():
                            total=total,
                            per_page=PER_PAGE)
 
+
 @app.route('/012d8cfd3eec704c72e046dfd2b72ee0.html')
 def verify_exoclick():
     return "012d8cfd3eec704c72e046dfd2b72ee0"
+
 
 @app.route('/8823b79722a732180d4e970ca4900eb4.html')
 def verify_exoclick_new():
     return "8823b79722a732180d4e970ca4900eb4"
 
+
 @app.route('/sitemap.xml')
 def sitemap():
     return send_from_directory('static', 'sitemap.xml')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
