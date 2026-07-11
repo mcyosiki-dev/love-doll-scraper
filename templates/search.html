@@ -5,9 +5,13 @@
     <meta name="google-site-verification" content="Doj7JaRzv0jiYE46eKZkmn3YXRmV0phAVqQ2KYxNaOY" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if keyword %}ラブドール検索 - {{ keyword }}{% else %}ラブドール検索 - 全国のラブドールを一括比較{% endif %}</title>
-    <!-- SEO / インデックス制御 -->
-    <meta name="description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格・メーカーで絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトから、WM DOLL・Irontech・オリエント工業など主要メーカーの商品をスペックで絞り込み。{% endif %}">
+    <!-- ★ robots 制御（条件付きインデックス） ★ -->
+    {% if not request.args %}
+    <meta name="robots" content="index, follow">
+    {% else %}
     <meta name="robots" content="noindex, follow">
+    {% endif %}
+    <meta name="description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格・メーカーで絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトから、WM DOLL・Irontech・オリエント工業など主要メーカーの商品をスペックで絞り込み。{% endif %}">
     <link rel="canonical" href="{{ request.url }}">
     <!-- ファビコン -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
