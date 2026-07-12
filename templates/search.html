@@ -145,14 +145,28 @@
         .checkbox-group .form-check {
             font-size: 0.8rem;
             margin-right: 0.2rem;
+            max-width: 100%;
+        }
+        /* ★ 材質ラベル長文対策：折り返し＋ツールチップ ★ */
+        .checkbox-group .form-check-label {
+            word-break: break-word;
+            display: inline-block;
+            max-width: 100%;
+            cursor: help;
         }
         .form-check-input {
             width: 14px;
             height: 14px;
+            flex-shrink: 0;
         }
         .form-check-input:checked {
             background-color: #3a8bb5;
             border-color: #3a8bb5;
+        }
+        /* ★ メーカーフィルター用ドロップダウン ★ */
+        .filter-group select.form-select {
+            font-size: 0.85rem;
+            padding: 4px 8px;
         }
         .btn-primary {
             background: linear-gradient(135deg, #4a9ec4, #2a7a9e);
@@ -474,6 +488,18 @@
                                 {% endfor %}
                             </div>
                         </div>
+                        <!-- ★ メーカーフィルター（ドロップダウン） ★ -->
+                        <div class="filter-group">
+                            <label class="form-label" for="manufacturerGroup">メーカー（頭文字）</label>
+                            <select class="form-select form-select-sm" id="manufacturerGroup" name="manufacturer_group" onchange="this.form.submit()">
+                                <option value="">すべて</option>
+                                <option value="A-F" {% if request.args.get('manufacturer_group') == 'A-F' %}selected{% endif %}>A〜F</option>
+                                <option value="G-N" {% if request.args.get('manufacturer_group') == 'G-N' %}selected{% endif %}>G〜N</option>
+                                <option value="O-S" {% if request.args.get('manufacturer_group') == 'O-S' %}selected{% endif %}>O〜S</option>
+                                <option value="T-Z" {% if request.args.get('manufacturer_group') == 'T-Z' %}selected{% endif %}>T〜Z</option>
+                                <option value="other" {% if request.args.get('manufacturer_group') == 'other' %}selected{% endif %}>その他（数字・漢字）</option>
+                            </select>
+                        </div>
                         <div class="filter-group">
                             <label class="form-label">材質</label>
                             <div class="checkbox-group">
@@ -481,7 +507,9 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="material" value="{{ mat }}" id="mat_{{ loop.index }}"
                                         {% if mat in selected_materials %}checked{% endif %}>
-                                    <label class="form-check-label" for="mat_{{ loop.index }}">{{ mat }}</label>
+                                    <label class="form-check-label" for="mat_{{ loop.index }}" title="{{ mat }}">
+                                        {{ mat[:25] }}{% if mat|length > 25 %}…{% endif %}
+                                    </label>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -533,10 +561,15 @@
                             </span>
                             <span class="tag-material">{{ row.material or '不明' }}</span>
                             <span class="product-name">{{ row.name }}</span>
-                            <span class="product-price">{{ row.price }}円</span>
+                            <span class="product-price">
+                                {% if row.price_int and row.price_int > 0 %}
+                                    {{ row.price }}円
+                                {% else %}
+                                    <span class="text-muted">価格不明</span>
+                                {% endif %}
+                            </span>
                             <span class="site-link-group">
                                 <span class="product-site">{{ row.site_name }}</span>
-                                <!-- ★ アフィリエイトリンク（YourDollのみ） ★ -->
                                 <span class="product-url">
                                     {% if row.site_name == 'yourdoll.jp' and config.YOURDOLL_REF %}
                                         <a href="{{ row.url }}?ref={{ config.YOURDOLL_REF }}" target="_blank" rel="nofollow sponsored">
