@@ -136,6 +136,11 @@ def search():
     page = request.args.get('page', 1, type=int)
     offset = (page - 1) * PER_PAGE
 
+    # ============================================================
+    # ★ メーカーフィルター（WebAIのフロントエンド実装完了により有効化）
+    # ============================================================
+    manufacturers = request.args.getlist('manufacturer')
+
     conn = get_db_connection()
     c = conn.cursor()
 
@@ -193,6 +198,12 @@ def search():
         placeholders = ','.join(['?'] * len(categories))
         query += f' AND p.category IN ({placeholders})'
         params.extend(categories)
+
+    # ★ メーカーフィルター（有効化）
+    if manufacturers:
+        placeholders = ','.join(['?'] * len(manufacturers))
+        query += f' AND p.manufacturer IN ({placeholders})'
+        params.extend(manufacturers)
 
     query += ' GROUP BY p.id'
 
