@@ -361,16 +361,25 @@ def search():
     else:
         query += ' ORDER BY p.id'
 
-    # ★ 修正：total 用のクエリを確実に生成（ORDER BY と LIMIT/OFFSET を除去）
-    count_query = re.sub(
-        r'SELECT\s+.*?\s+FROM\s+products\s+p',
-        'SELECT COUNT(DISTINCT p.id) AS total FROM products p',
-        query,
-        flags=re.DOTALL | re.IGNORECASE
-    )
+    # ★★★ 確実な total クエリ生成 ★★★
+    # 1. "FROM products p" の位置を特定して、SELECT句だけを置き換える
+    from_pos = query.upper().find('FROM PRODUCTS P')
+    if from_pos != -1:
+        count_query = 'SELECT COUNT(DISTINCT p.id) AS total ' + query[from_pos:]
+    else:
+        # フォールバック（万が一）
+        count_query = re.sub(
+            r'SELECT\s+.*?\s+FROM\s+products\s+p',
+            'SELECT COUNT(DISTINCT p.id) AS total FROM products p',
+            query,
+            flags=re.DOTALL | re.IGNORECASE
+        )
+
+    # 2. ORDER BY を削除
     count_query = re.sub(r'\s+ORDER\s+BY\s+.*?(?=\s+LIMIT|$)', '', count_query, flags=re.IGNORECASE)
+    # 3. LIMIT/OFFSET を削除
     count_query = re.sub(r'\s+LIMIT\s+\?\s+OFFSET\s+\?', '', count_query, flags=re.IGNORECASE)
-    count_params = params[:-2]
+    count_params = params[:-2] if len(params) >= 2 else params[:]
 
     try:
         c.execute(count_query, count_params)
