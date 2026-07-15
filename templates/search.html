@@ -660,10 +660,12 @@
                     </div>
                     {% endfor %}
 
-                    <!-- ★ ページネーション（修正済み：pageパラメータの重複を解消） ★ -->
+                    <!-- ★ ページネーション（改善版：最初・最後を常に表示） ★ -->
                     {% if total > per_page %}
+                    {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                     <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
                         <ul class="pagination justify-content-center">
+                            <!-- 前へ -->
                             {% if page > 1 %}
                             <li class="page-item">
                                 {% set query_params = request.args.to_dict() %}
@@ -676,21 +678,35 @@
                             </li>
                             {% endif %}
 
-                            {% set start_page = [page - 2, 1]|max %}
-                            {% set end_page = [page + 2, (total // per_page) + 1]|min %}
-                            {% for p in range(start_page, end_page + 1) %}
-                                {% if p == page %}
-                                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
-                                {% else %}
-                                <li class="page-item">
-                                    {% set query_params = request.args.to_dict() %}
-                                    {% set _ = query_params.pop('page', None) %}
-                                    <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
-                                </li>
+                            <!-- ページ番号（最初・最後を常に表示、前後2ページを表示、それ以外は省略） -->
+                            {% set pages_to_show = [] %}
+                            {% set page_range = [1, 2, 3, total_pages - 2, total_pages - 1, total_pages] %}
+                            {% for p in page_range %}
+                                {% if p >= 1 and p <= total_pages %}
+                                    {% set _ = pages_to_show.append(p) %}
                                 {% endif %}
                             {% endfor %}
+                            {% set pages_to_show = pages_to_show|unique|sort %}
 
-                            {% if page < (total // per_page) + 1 %}
+                            {% set prev_page = 0 %}
+                            {% for p in pages_to_show %}
+                                {% if p - prev_page > 1 %}
+                                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                {% if p == page %}
+                                    <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                                {% else %}
+                                    <li class="page-item">
+                                        {% set query_params = request.args.to_dict() %}
+                                        {% set _ = query_params.pop('page', None) %}
+                                        <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
+                                    </li>
+                                {% endif %}
+                                {% set prev_page = p %}
+                            {% endfor %}
+
+                            <!-- 次へ -->
+                            {% if page < total_pages %}
                             <li class="page-item">
                                 {% set query_params = request.args.to_dict() %}
                                 {% set _ = query_params.pop('page', None) %}
