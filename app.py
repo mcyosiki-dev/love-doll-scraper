@@ -3,6 +3,8 @@ from datetime import timedelta
 import sqlite3
 import re
 import os
+import hashlib
+import time
 from functools import lru_cache
 
 app = Flask(__name__)
@@ -19,6 +21,28 @@ app.config.update(
     SESSION_COOKIE_SECURE=os.environ.get('RENDER', 'false').lower() == 'true',
     SESSION_COOKIE_PATH='/',
 )
+
+# ============================================================
+# ★ 簡易キャッシュ（メモリ内）
+# ============================================================
+_cache = {}
+CACHE_EXPIRE = 60  # 秒
+
+def get_cache_key(query, params):
+    key_str = query + str(params)
+    return hashlib.md5(key_str.encode()).hexdigest()
+
+def get_cached(key):
+    if key in _cache:
+        data, timestamp = _cache[key]
+        if time.time() - timestamp < CACHE_EXPIRE:
+            return data
+        else:
+            del _cache[key]
+    return None
+
+def set_cached(key, data):
+    _cache[key] = (data, time.time())
 
 CUP_ORDER = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 PER_PAGE = 30
@@ -46,7 +70,6 @@ def extract_site_name(url):
     return domain.split('/')[0]
 
 
-# ★ インデックス作成関数（遅延実行用）
 _indexes_created = False
 
 def ensure_indexes():
@@ -147,102 +170,125 @@ def search():
     foot_max = request.args.get('foot_max', '')
     price_min = request.args.get('price_min', '')
     price_max = request.args.get('price_max', '')
-    selected_cups = request.args.getlist('cup')
+    selected_cups = ','.join(sorted(request.args.getlist('cup')))
     cup_m_or_more = request.args.get('cup_m_or_more') == 'on'
-    categories = request.args.getlist('category')
-    materials = request.args.getlist('material')
+    categories = ','.join(sorted(request.args.getlist('category')))
+    materials = ','.join(sorted(request.args.getlist('material')))
     sort_by = request.args.get('sort_by', 'price_asc')
     page = request.args.get('page', 1, type=int)
+    manufacturers = ','.join(sorted(request.args.getlist('manufacturer')))
+
+    cache_key = f"{keyword}|{height_min}|{height_max}|{weight_min}|{weight_max}|{foot_min}|{foot_max}|{price_min}|{price_max}|{selected_cups}|{cup_m_or_more}|{categories}|{materials}|{sort_by}|{page}|{manufacturers}"
+    cache_key = hashlib.md5(cache_key.encode()).hexdigest()
+
+    cached_data = get_cached(cache_key)
+    if cached_data is not None:
+        results_with_site, total, price_min_val, price_max_val, height_min_val, height_max_val, weight_min_val, weight_max_val, foot_min_val, foot_max_val = cached_data
+        return render_template('search.html',
+                               results=results_with_site,
+                               keyword=keyword,
+                               height_min=height_min,
+                               height_max=height_max,
+                               weight_min=weight_min,
+                               weight_max=weight_max,
+                               foot_min=foot_min,
+                               foot_max=foot_max,
+                               price_min=price_min,
+                               price_max=price_max,
+                               height_min_val=height_min_val,
+                               height_max_val=height_max_val,
+                               weight_min_val=weight_min_val,
+                               weight_max_val=weight_max_val,
+                               foot_min_val=foot_min_val,
+                               foot_max_val=foot_max_val,
+                               price_min_val=price_min_val,
+                               price_max_val=price_max_val,
+                               selected_cups=request.args.getlist('cup'),
+                               cup_m_or_more=cup_m_or_more,
+                               selected_categories=request.args.getlist('category'),
+                               all_categories=get_all_categories(),
+                               selected_materials=request.args.getlist('material'),
+                               all_materials=get_all_materials(),
+                               available_cups=CUP_ORDER,
+                               sort_by=sort_by,
+                               page=page,
+                               total=total,
+                               per_page=PER_PAGE)
+
     offset = (page - 1) * PER_PAGE
-
-    manufacturers = request.args.getlist('manufacturer')
-
     conn = get_db_connection()
     c = conn.cursor()
 
-    # ★ FTS5全文検索を使用するかどうか（キーワードがある場合）
-    use_fts = keyword and len(keyword) >= 2
+    query = '''
+        SELECT
+            p.id, p.name, p.price, p.url, p.category,
+            p.height_cm AS height,
+            p.weight_kg AS weight,
+            p.foot_cm AS foot,
+            p.price_int AS price_int,
+            MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) AS cup,
+            MAX(CASE WHEN s.spec_key = 'バスト' THEN s.spec_value END) AS bust,
+            MAX(CASE WHEN s.spec_key = 'アンダーバスト' THEN s.spec_value END) AS under_bust,
+            MAX(CASE WHEN s.spec_key = 'ウエスト' THEN s.spec_value END) AS waist,
+            MAX(CASE WHEN s.spec_key = 'ヒップ' THEN s.spec_value END) AS hip,
+            MAX(CASE WHEN s.spec_key = '肩幅' THEN s.spec_value END) AS shoulder,
+            MAX(CASE WHEN s.spec_key = '膣の深さ' THEN s.spec_value END) AS vagina_depth,
+            MAX(CASE WHEN s.spec_key = 'アナルの深さ' THEN s.spec_value END) AS anal_depth,
+            MAX(CASE WHEN s.spec_key = '口の深さ' THEN s.spec_value END) AS mouth_depth,
+            MAX(CASE WHEN s.spec_key = '材質' THEN s.spec_value END) AS material
+        FROM products p
+        LEFT JOIN specs s ON p.id = s.product_id
+        WHERE 1=1
+    '''
+    params = []
 
-    if use_fts:
-        # FTS5テーブルが存在するか確認
+    if keyword:
         c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products_fts'")
         if c.fetchone():
-            # FTS5検索を使用（高速）
-            # キーワードをスペース区切りでAND検索用に変換
             fts_keyword = ' AND '.join([f'"{w}"' for w in keyword.split()])
-            query = '''
-                SELECT
-                    p.id, p.name, p.price, p.url, p.category,
-                    p.height_cm AS height,
-                    p.weight_kg AS weight,
-                    p.foot_cm AS foot,
-                    p.price_int AS price_int,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'カップ数') AS cup,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'バスト') AS bust,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アンダーバスト') AS under_bust,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ウエスト') AS waist,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ヒップ') AS hip,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '肩幅') AS shoulder,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '膣の深さ') AS vagina_depth,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アナルの深さ') AS anal_depth,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '口の深さ') AS mouth_depth,
-                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '材質') AS material
-                FROM products p
-                JOIN products_fts fts ON p.id = fts.rowid
-                WHERE products_fts MATCH ?
-                AND 1=1
-            '''
-            params = [fts_keyword]
+            c.execute("SELECT rowid FROM products_fts WHERE products_fts MATCH ? LIMIT 1000", (fts_keyword,))
+            fts_ids = [row[0] for row in c.fetchall()]
+            if fts_ids:
+                placeholders = ','.join(['?'] * len(fts_ids))
+                query += f' AND p.id IN ({placeholders})'
+                params.extend(fts_ids)
+            else:
+                conn.close()
+                # ★ 修正：全ての引数を正しく渡す
+                return render_template('search.html',
+                                       results=[],
+                                       keyword=keyword,
+                                       height_min=height_min,
+                                       height_max=height_max,
+                                       weight_min=weight_min,
+                                       weight_max=weight_max,
+                                       foot_min=foot_min,
+                                       foot_max=foot_max,
+                                       price_min=price_min,
+                                       price_max=price_max,
+                                       height_min_val=0,
+                                       height_max_val=100,
+                                       weight_min_val=0,
+                                       weight_max_val=70,
+                                       foot_min_val=0,
+                                       foot_max_val=30,
+                                       price_min_val=0,
+                                       price_max_val=1000000,
+                                       selected_cups=request.args.getlist('cup'),
+                                       cup_m_or_more=cup_m_or_more,
+                                       selected_categories=request.args.getlist('category'),
+                                       all_categories=get_all_categories(),
+                                       selected_materials=request.args.getlist('material'),
+                                       all_materials=get_all_materials(),
+                                       available_cups=CUP_ORDER,
+                                       sort_by=sort_by,
+                                       page=page,
+                                       total=0,
+                                       per_page=PER_PAGE)
         else:
-            use_fts = False
-
-    if not use_fts:
-        # 従来のLIKE検索（フォールバック）
-        query = '''
-            SELECT
-                p.id, p.name, p.price, p.url, p.category,
-                p.height_cm AS height,
-                p.weight_kg AS weight,
-                p.foot_cm AS foot,
-                p.price_int AS price_int,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'カップ数') AS cup,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'バスト') AS bust,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アンダーバスト') AS under_bust,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ウエスト') AS waist,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ヒップ') AS hip,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '肩幅') AS shoulder,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '膣の深さ') AS vagina_depth,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アナルの深さ') AS anal_depth,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '口の深さ') AS mouth_depth,
-                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '材質') AS material
-            FROM products p
-            WHERE 1=1
-        '''
-        params = []
-        if keyword:
-            words = keyword.strip().split()
-            for word in words:
-                subquery = """
-                    (
-                        p.name LIKE ?
-                        OR p.category LIKE ?
-                        OR p.manufacturer LIKE ?
-                        OR EXISTS (
-                            SELECT 1 FROM specs s2
-                            WHERE s2.product_id = p.id
-                            AND s2.spec_key = '材質'
-                            AND s2.spec_value LIKE ?
-                        )
-                        OR EXISTS (
-                            SELECT 1 FROM specs s2
-                            WHERE s2.product_id = p.id
-                            AND s2.spec_key = 'カップ数'
-                            AND s2.spec_value LIKE ?
-                        )
-                    )
-                """
-                params.extend([f'%{word}%'] * 5)
-                query += f' AND {subquery}'
+            for word in keyword.split():
+                query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ?)'
+                params.extend([f'%{word}%'] * 3)
 
     if height_min:
         query += ' AND p.height_cm >= ?'
@@ -269,72 +315,52 @@ def search():
         query += ' AND p.price_int <= ?'
         params.append(int(price_max))
     if categories:
-        placeholders = ','.join(['?'] * len(categories))
+        cat_list = categories.split(',')
+        placeholders = ','.join(['?'] * len(cat_list))
         query += f' AND p.category IN ({placeholders})'
-        params.extend(categories)
-
+        params.extend(cat_list)
     if manufacturers:
-        placeholders = ','.join(['?'] * len(manufacturers))
+        mfg_list = manufacturers.split(',')
+        placeholders = ','.join(['?'] * len(mfg_list))
         query += f' AND p.manufacturer IN ({placeholders})'
-        params.extend(manufacturers)
+        params.extend(mfg_list)
 
     query += ' GROUP BY p.id'
 
     having_conditions = []
-
     if selected_cups:
-        placeholders = ','.join(['?'] * len(selected_cups))
-        having_conditions.append(f'cup IN ({placeholders})')
-        params.extend(selected_cups)
-
+        cup_list = selected_cups.split(',')
+        placeholders = ','.join(['?'] * len(cup_list))
+        having_conditions.append(f'MAX(CASE WHEN s.spec_key = "カップ数" THEN s.spec_value END) IN ({placeholders})')
+        params.extend(cup_list)
     if cup_m_or_more:
         having_conditions.append('''
             CASE
-                WHEN cup = 'AA' THEN 0
-                WHEN cup = 'A' THEN 1
-                WHEN cup = 'B' THEN 2
-                WHEN cup = 'C' THEN 3
-                WHEN cup = 'D' THEN 4
-                WHEN cup = 'E' THEN 5
-                WHEN cup = 'F' THEN 6
-                WHEN cup = 'G' THEN 7
-                WHEN cup = 'H' THEN 8
-                WHEN cup = 'I' THEN 9
-                WHEN cup = 'J' THEN 10
-                WHEN cup = 'K' THEN 11
-                WHEN cup = 'L' THEN 12
-                WHEN cup = 'M以上' THEN 13
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'AA' THEN 0
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'A' THEN 1
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'B' THEN 2
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'C' THEN 3
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'D' THEN 4
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'E' THEN 5
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'F' THEN 6
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'G' THEN 7
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'H' THEN 8
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'I' THEN 9
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'J' THEN 10
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'K' THEN 11
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'L' THEN 12
+                WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'M以上' THEN 13
                 ELSE 0
             END >= 13
         ''')
-
     if materials:
-        placeholders = ','.join(['?'] * len(materials))
-        having_conditions.append(f'material IN ({placeholders})')
-        params.extend(materials)
+        mat_list = materials.split(',')
+        placeholders = ','.join(['?'] * len(mat_list))
+        having_conditions.append(f'MAX(CASE WHEN s.spec_key = "材質" THEN s.spec_value END) IN ({placeholders})')
+        params.extend(mat_list)
 
     if having_conditions:
         query += ' HAVING ' + ' AND '.join(having_conditions)
-
-    cup_order_case = '''
-        CASE
-            WHEN cup = 'AA' THEN 0
-            WHEN cup = 'A' THEN 1
-            WHEN cup = 'B' THEN 2
-            WHEN cup = 'C' THEN 3
-            WHEN cup = 'D' THEN 4
-            WHEN cup = 'E' THEN 5
-            WHEN cup = 'F' THEN 6
-            WHEN cup = 'G' THEN 7
-            WHEN cup = 'H' THEN 8
-            WHEN cup = 'I' THEN 9
-            WHEN cup = 'J' THEN 10
-            WHEN cup = 'K' THEN 11
-            WHEN cup = 'L' THEN 12
-            WHEN cup = 'M以上' THEN 13
-            ELSE 99
-        END
-    '''
 
     sort_map = {
         'price_asc': ('p.price_int ASC', 'price'),
@@ -343,16 +369,25 @@ def search():
         'height_desc': ('p.height_cm DESC', 'height'),
         'weight_asc': ('p.weight_kg ASC', 'weight'),
         'weight_desc': ('p.weight_kg DESC', 'weight'),
-        'bust_asc': ('CAST(REPLACE(bust, "cm", "") AS REAL) ASC', 'bust'),
-        'bust_desc': ('CAST(REPLACE(bust, "cm", "") AS REAL) DESC', 'bust'),
-        'cup_asc': (f'{cup_order_case} ASC', 'cup'),
-        'cup_desc': (f'{cup_order_case} DESC', 'cup'),
+        'bust_asc': ('MAX(CASE WHEN s.spec_key = "バスト" THEN CAST(REPLACE(s.spec_value, "cm", "") AS REAL) END) ASC', 'bust'),
+        'bust_desc': ('MAX(CASE WHEN s.spec_key = "バスト" THEN CAST(REPLACE(s.spec_value, "cm", "") AS REAL) END) DESC', 'bust'),
+        'cup_asc': ('MAX(CASE WHEN s.spec_key = "カップ数" THEN s.spec_value END) ASC', 'cup'),
+        'cup_desc': ('MAX(CASE WHEN s.spec_key = "カップ数" THEN s.spec_value END) DESC', 'cup'),
     }
     if sort_by in sort_map:
         order_clause, _ = sort_map[sort_by]
         query += f' ORDER BY {order_clause}'
     else:
         query += ' ORDER BY p.id'
+
+    count_query = re.sub(r'SELECT.*FROM products p', 'SELECT COUNT(DISTINCT p.id) AS total FROM products p', query)
+    count_params = params[:len(params) - 2] if sort_by in sort_map else params[:]
+
+    try:
+        c.execute(count_query, count_params)
+        total = c.fetchone()[0]
+    except:
+        total = 0
 
     query += ' LIMIT ? OFFSET ?'
     params.extend([PER_PAGE, offset])
@@ -366,14 +401,6 @@ def search():
         row_dict = dict(row)
         row_dict['site_name'] = extract_site_name(row['url'])
         results_with_site.append(row_dict)
-
-    conn2 = get_db_connection()
-    total = conn2.execute('SELECT COUNT(*) AS total FROM products').fetchone()['total']
-    conn2.close()
-
-    all_categories = get_all_categories()
-    all_materials = get_all_materials()
-    available_cups = CUP_ORDER
 
     def get_min_max(col_name):
         conn = get_db_connection()
@@ -400,6 +427,9 @@ def search():
     weight_min_val, weight_max_val = get_min_max('weight_kg')
     foot_min_val, foot_max_val = get_min_max('foot_cm')
 
+    cache_data = (results_with_site, total, price_min_val, price_max_val, height_min_val, height_max_val, weight_min_val, weight_max_val, foot_min_val, foot_max_val)
+    set_cached(cache_key, cache_data)
+
     return render_template('search.html',
                            results=results_with_site,
                            keyword=keyword,
@@ -419,17 +449,18 @@ def search():
                            foot_max_val=foot_max_val,
                            price_min_val=price_min_val,
                            price_max_val=price_max_val,
-                           selected_cups=selected_cups,
+                           selected_cups=request.args.getlist('cup'),
                            cup_m_or_more=cup_m_or_more,
-                           selected_categories=categories,
-                           all_categories=all_categories,
-                           selected_materials=materials,
-                           all_materials=all_materials,
-                           available_cups=available_cups,
+                           selected_categories=request.args.getlist('category'),
+                           all_categories=get_all_categories(),
+                           selected_materials=request.args.getlist('material'),
+                           all_materials=get_all_materials(),
+                           available_cups=CUP_ORDER,
                            sort_by=sort_by,
                            page=page,
                            total=total,
                            per_page=PER_PAGE)
+
 
 @app.route('/012d8cfd3eec704c72e046dfd2b72ee0.html')
 def verify_exoclick():
