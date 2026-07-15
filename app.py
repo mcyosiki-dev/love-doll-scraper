@@ -143,6 +143,10 @@ def search():
         return redirect(url_for('top'))
 
     keyword = request.args.get('keyword', '').strip()
+    # ★★★ デバッグ出力追加 ★★★
+    print(f"DEBUG: keyword = '{keyword}'")
+    print(f"DEBUG: request.args = {dict(request.args)}")
+
     height_min = request.args.get('height_min', '')
     height_max = request.args.get('height_max', '')
     weight_min = request.args.get('weight_min', '')
@@ -342,32 +346,28 @@ def search():
     else:
         query += ' ORDER BY p.id'
 
-    # ★★★ 確実な total クエリ生成（再修正） ★★★
-    # "FROM products p" の位置を特定
+    # ★★★ 確実な total クエリ生成 ★★★
     from_pos = query.upper().find('FROM PRODUCTS P')
     if from_pos != -1:
         count_query = 'SELECT COUNT(DISTINCT p.id) AS total ' + query[from_pos:]
     else:
-        # フォールバック：最初の "FROM" を探す
         from_pos2 = query.upper().find('FROM')
         if from_pos2 != -1:
             count_query = 'SELECT COUNT(DISTINCT p.id) AS total ' + query[from_pos2:]
         else:
-            # 万が一（エラー回避）
             count_query = 'SELECT COUNT(DISTINCT p.id) AS total FROM products p WHERE 1=0'
 
-    # ORDER BY を削除
     count_query = re.sub(r'\s+ORDER\s+BY\s+.*?(?=\s+LIMIT|$)', '', count_query, flags=re.IGNORECASE)
-    # LIMIT/OFFSET を削除
     count_query = re.sub(r'\s+LIMIT\s+\?\s+OFFSET\s+\?', '', count_query, flags=re.IGNORECASE)
     count_params = params[:-2] if len(params) >= 2 else params[:]
 
-    # ★ デバッグ出力（修正後も確認のため残す）
     print("=" * 60)
     print("=== count_query (修正後) ===")
     print(count_query)
     print("=== count_params (修正後) ===")
     print(count_params)
+    print("=== params (全文) ===")
+    print(params)
     print("=" * 60)
 
     try:
