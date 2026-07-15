@@ -607,77 +607,100 @@
                     {% endfor %}
                 </form>
 
-                <!-- ★ 追加：現在の検索条件表示 ★ -->
+                <!-- ★ 現在の検索条件表示（辞書内包表記を使わず、to_dict + pop で実装） ★ -->
                 <div class="current-filters">
                     <span><i class="bi bi-funnel"></i> 現在の条件：</span>
                     {% set has_filter = false %}
                     {% if keyword %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('keyword', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-search"></i> {{ keyword }}
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k != 'keyword'}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.get('manufacturer_search') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('manufacturer_search', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-building"></i> メーカー: {{ request.args.get('manufacturer_search') }}
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k != 'manufacturer_search'}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.get('manufacturer') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('manufacturer', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-tag"></i> 頭文字: {{ request.args.get('manufacturer') }}
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k != 'manufacturer'}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.get('height_min') or request.args.get('height_max') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('height_min', None) %}
+                        {% set _ = filter_params.pop('height_max', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-rulers"></i> 身長: {{ request.args.get('height_min', height_min_val) }}〜{{ request.args.get('height_max', height_max_val) }}cm
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k not in ['height_min', 'height_max']}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.get('weight_min') or request.args.get('weight_max') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('weight_min', None) %}
+                        {% set _ = filter_params.pop('weight_max', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-weight-scale"></i> 体重: {{ request.args.get('weight_min', weight_min_val) }}〜{{ request.args.get('weight_max', 70) }}kg
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k not in ['weight_min', 'weight_max']}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.get('price_min') or request.args.get('price_max') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('price_min', None) %}
+                        {% set _ = filter_params.pop('price_max', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-yen"></i> 価格: {{ (request.args.get('price_min', price_min_val)|int // 10000) }}〜{{ (request.args.get('price_max', price_max_val)|int // 10000) }}万円
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k not in ['price_min', 'price_max']}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.getlist('category') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('category', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-tags"></i> カテゴリ: {{ request.args.getlist('category')|join(', ') }}
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k != 'category'}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.getlist('material') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('material', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-droplet"></i> 材質: {{ request.args.getlist('material')|join(', ') }}
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k != 'material'}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.getlist('cup') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('cup', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-cup"></i> カップ: {{ request.args.getlist('cup')|join(', ') }}
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k != 'cup'}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
                     {% if request.args.get('cup_m_or_more') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('cup_m_or_more', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-cup"></i> M以上
-                            <a href="{{ url_for('search', **{k:v for k,v in request.args.items() if k != 'cup_m_or_more'}) }}" class="remove-filter">&times;</a>
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
                     {% endif %}
