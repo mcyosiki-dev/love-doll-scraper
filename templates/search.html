@@ -504,7 +504,8 @@
                         <!-- メーカーフィルター（ドロップダウン） -->
                         <div class="filter-group">
                             <label class="form-label" for="manufacturerGroup">メーカー（頭文字）</label>
-                            <select class="form-select form-select-sm" id="manufacturerGroup" name="manufacturer_group" onchange="this.form.submit()">
+                            <!-- ★★★ 修正ポイント：name="manufacturer_group" → name="manufacturer" ★★★ -->
+                            <select class="form-select form-select-sm" id="manufacturerGroup" name="manufacturer" onchange="this.form.submit()">
                                 <option value="">すべて</option>
                                 <option value="A-F" {% if request.args.get('manufacturer_group') == 'A-F' %}selected{% endif %}>A〜F</option>
                                 <option value="G-N" {% if request.args.get('manufacturer_group') == 'G-N' %}selected{% endif %}>G〜N</option>
