@@ -660,7 +660,7 @@
                     </div>
                     {% endfor %}
 
-                    <!-- ★ ページネーション（最終確定版：徹底的に重複排除） ★ -->
+                    <!-- ★ ページネーション（loop.previtem使用版：スコープ問題完全回避） ★ -->
                     {% if total > per_page %}
                     {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                     <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
@@ -678,7 +678,7 @@
                             </li>
                             {% endif %}
 
-                            <!-- ページ番号（完全にユニーク＆ソート済み） -->
+                            <!-- ページ番号（ユニーク＆ソート済み） -->
                             {% set page_set = [] %}
                             {% set _ = page_set.append(1) %}
                             {% for p in range(page-2, page+3) %}
@@ -689,21 +689,20 @@
                             {% if total_pages not in page_set %}
                                 {% set _ = page_set.append(total_pages) %}
                             {% endif %}
-                            {% set page_set = page_set|sort %}
+                            {% set sorted_pages = page_set|sort %}
 
-                            {# 重複を排除（Jinja2のsetでは重複が残るため、新規リストに詰め直す） #}
                             {% set unique_pages = [] %}
                             {% set last_val = 0 %}
-                            {% for p in page_set %}
+                            {% for p in sorted_pages %}
                                 {% if p != last_val %}
                                     {% set _ = unique_pages.append(p) %}
                                     {% set last_val = p %}
                                 {% endif %}
                             {% endfor %}
 
-                            {% set prev = 0 %}
+                            {# ★ loop.previtem を使用してスコープ問題を完全に回避 ★ #}
                             {% for p in unique_pages %}
-                                {% if p - prev > 1 %}
+                                {% if loop.previtem and p - loop.previtem > 1 %}
                                     <li class="page-item disabled"><span class="page-link">…</span></li>
                                 {% endif %}
                                 {% if p == page %}
@@ -715,7 +714,6 @@
                                         <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
                                     </li>
                                 {% endif %}
-                                {% set prev = p %}
                             {% endfor %}
 
                             <!-- 次へ -->
