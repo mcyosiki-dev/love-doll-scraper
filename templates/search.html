@@ -147,7 +147,6 @@
             margin-right: 0.2rem;
             max-width: 100%;
         }
-        /* ★ 材質ラベル長文対策：折り返し＋ツールチップ ★ */
         .checkbox-group .form-check-label {
             word-break: break-word;
             display: inline-block;
@@ -163,7 +162,6 @@
             background-color: #3a8bb5;
             border-color: #3a8bb5;
         }
-        /* ★ メーカーフィルター用ドロップダウン ★ */
         .filter-group select.form-select {
             font-size: 0.85rem;
             padding: 4px 8px;
@@ -323,6 +321,21 @@
             background: white;
             font-size: 0.85rem;
             max-width: 100%;
+        }
+
+        /* ページネーション用スタイル */
+        .pagination .page-link {
+            color: #1a4b6d;
+            background: transparent;
+            border: 1px solid #c0dce8;
+        }
+        .pagination .page-item.active .page-link {
+            background: #1a4b6d;
+            border-color: #1a4b6d;
+            color: white;
+        }
+        .pagination .page-link:hover {
+            background: #e0f2fe;
         }
 
         @media (max-width: 1200px) {
@@ -488,7 +501,7 @@
                                 {% endfor %}
                             </div>
                         </div>
-                        <!-- ★ メーカーフィルター（ドロップダウン） ★ -->
+                        <!-- メーカーフィルター（ドロップダウン） -->
                         <div class="filter-group">
                             <label class="form-label" for="manufacturerGroup">メーカー（頭文字）</label>
                             <select class="form-select form-select-sm" id="manufacturerGroup" name="manufacturer_group" onchange="this.form.submit()">
@@ -520,7 +533,7 @@
 
             <div class="col-lg-10 col-md-9">
                 <div class="result-header">
-                    <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件</span>
+                    <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件 / 全 {{ total }} 件</span>
                     <div class="sort-controls">
                         <label for="sortSelect"><i class="bi bi-arrow-up-down me-1"></i>並び替え</label>
                         <select id="sortSelect" onchange="document.getElementById('searchForm').submit()" name="sort_by" form="searchForm">
@@ -646,6 +659,44 @@
                         </div>
                     </div>
                     {% endfor %}
+
+                    <!-- ★ ページネーション ★ -->
+                    {% if total > per_page %}
+                    <nav aria-label="ページナビゲーション">
+                        <ul class="pagination justify-content-center">
+                            {% if page > 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('search', page=page-1, **request.args) }}">« 前へ</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">« 前へ</span>
+                            </li>
+                            {% endif %}
+
+                            {% set start_page = [page - 2, 1]|max %}
+                            {% set end_page = [page + 2, (total // per_page) + 1]|min %}
+                            {% for p in range(start_page, end_page + 1) %}
+                                {% if p == page %}
+                                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                                {% else %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('search', page=p, **request.args) }}">{{ p }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page < (total // per_page) + 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('search', page=page+1, **request.args) }}">次へ »</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">次へ »</span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
                 {% else %}
                     <div class="alert alert-info text-center" role="alert">
                         <i class="bi bi-search-heart me-2"></i>該当する商品がありません。
