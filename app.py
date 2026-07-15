@@ -342,28 +342,31 @@ def search():
     else:
         query += ' ORDER BY p.id'
 
-    # ★ total クエリ生成（確実な方法：正規表現で置換）
-    import re
-    count_query = re.sub(
-        r'^SELECT\s+.*?\s+FROM\s+products\s+p',
-        'SELECT COUNT(DISTINCT p.id) AS total FROM products p',
-        query,
-        flags=re.DOTALL | re.IGNORECASE,
-        count=1
-    )
+    # ★★★ 確実な total クエリ生成（再修正） ★★★
+    # "FROM products p" の位置を特定
+    from_pos = query.upper().find('FROM PRODUCTS P')
+    if from_pos != -1:
+        count_query = 'SELECT COUNT(DISTINCT p.id) AS total ' + query[from_pos:]
+    else:
+        # フォールバック：最初の "FROM" を探す
+        from_pos2 = query.upper().find('FROM')
+        if from_pos2 != -1:
+            count_query = 'SELECT COUNT(DISTINCT p.id) AS total ' + query[from_pos2:]
+        else:
+            # 万が一（エラー回避）
+            count_query = 'SELECT COUNT(DISTINCT p.id) AS total FROM products p WHERE 1=0'
+
     # ORDER BY を削除
-    order_match = re.search(r'\s+ORDER\s+BY\s+', count_query, re.IGNORECASE)
-    if order_match:
-        count_query = count_query[:order_match.start()]
+    count_query = re.sub(r'\s+ORDER\s+BY\s+.*?(?=\s+LIMIT|$)', '', count_query, flags=re.IGNORECASE)
     # LIMIT/OFFSET を削除
     count_query = re.sub(r'\s+LIMIT\s+\?\s+OFFSET\s+\?', '', count_query, flags=re.IGNORECASE)
     count_params = params[:-2] if len(params) >= 2 else params[:]
 
-    # ★★★ デバッグ出力 ★★★
+    # ★ デバッグ出力（修正後も確認のため残す）
     print("=" * 60)
-    print("=== count_query ===")
+    print("=== count_query (修正後) ===")
     print(count_query)
-    print("=== count_params ===")
+    print("=== count_params (修正後) ===")
     print(count_params)
     print("=" * 60)
 
