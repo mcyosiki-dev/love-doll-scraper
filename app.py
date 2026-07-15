@@ -145,6 +145,7 @@ def search():
     conn = get_db_connection()
     c = conn.cursor()
 
+    # ★ 本修正：LEFT JOIN をサブクエリに変更
     query = '''
         SELECT
             p.id, p.name, p.price, p.url, p.category,
@@ -152,27 +153,25 @@ def search():
             p.weight_kg AS weight,
             p.foot_cm AS foot,
             p.price_int AS price_int,
-            MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) AS cup,
-            MAX(CASE WHEN s.spec_key = 'バスト' THEN s.spec_value END) AS bust,
-            MAX(CASE WHEN s.spec_key = 'アンダーバスト' THEN s.spec_value END) AS under_bust,
-            MAX(CASE WHEN s.spec_key = 'ウエスト' THEN s.spec_value END) AS waist,
-            MAX(CASE WHEN s.spec_key = 'ヒップ' THEN s.spec_value END) AS hip,
-            MAX(CASE WHEN s.spec_key = '肩幅' THEN s.spec_value END) AS shoulder,
-            MAX(CASE WHEN s.spec_key = '膣の深さ' THEN s.spec_value END) AS vagina_depth,
-            MAX(CASE WHEN s.spec_key = 'アナルの深さ' THEN s.spec_value END) AS anal_depth,
-            MAX(CASE WHEN s.spec_key = '口の深さ' THEN s.spec_value END) AS mouth_depth,
-            MAX(CASE WHEN s.spec_key = '材質' THEN s.spec_value END) AS material
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'カップ数') AS cup,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'バスト') AS bust,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アンダーバスト') AS under_bust,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ウエスト') AS waist,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ヒップ') AS hip,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '肩幅') AS shoulder,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '膣の深さ') AS vagina_depth,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アナルの深さ') AS anal_depth,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '口の深さ') AS mouth_depth,
+            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '材質') AS material
         FROM products p
-        LEFT JOIN specs s ON p.id = s.product_id
         WHERE 1=1
     '''
     params = []
 
-    # ★ キーワード検索（AND検索＋対象カラム拡張）【バグ修正版】
+    # ★ キーワード検索（AND検索＋対象カラム拡張）
     if keyword:
         words = keyword.strip().split()
         for word in words:
-            # ★ 修正：サブクエリを材質とカップ数で分割し、プレースホルダー数を5つに統一
             subquery = """
                 (
                     p.name LIKE ?
@@ -235,69 +234,58 @@ def search():
 
     if selected_cups:
         placeholders = ','.join(['?'] * len(selected_cups))
-        having_conditions.append(f'MAX(CASE WHEN s.spec_key = "カップ数" THEN s.spec_value END) IN ({placeholders})')
+        # ★ cup エイリアスを使用
+        having_conditions.append(f'cup IN ({placeholders})')
         params.extend(selected_cups)
 
     if cup_m_or_more:
+        # ★ cup エイリアスを使用
         having_conditions.append('''
-            MAX(CASE WHEN s.spec_key = "カップ数" THEN
-                CASE
-                    WHEN s.spec_value LIKE '%M%' THEN 13
-                    WHEN s.spec_value LIKE '%N%' THEN 14
-                    WHEN s.spec_value LIKE '%O%' THEN 15
-                    WHEN s.spec_value LIKE '%P%' THEN 16
-                    WHEN s.spec_value LIKE '%Q%' THEN 17
-                    WHEN s.spec_value LIKE '%R%' THEN 18
-                    WHEN s.spec_value LIKE '%S%' THEN 19
-                    WHEN s.spec_value LIKE '%T%' THEN 20
-                    WHEN s.spec_value LIKE '%U%' THEN 21
-                    WHEN s.spec_value LIKE '%V%' THEN 22
-                    WHEN s.spec_value LIKE '%W%' THEN 23
-                    WHEN s.spec_value LIKE '%X%' THEN 24
-                    WHEN s.spec_value LIKE '%Y%' THEN 25
-                    WHEN s.spec_value LIKE '%Z%' THEN 26
-                    WHEN s.spec_value LIKE '%G以上' THEN 7
-                    WHEN s.spec_value LIKE '%H%' THEN 8
-                    WHEN s.spec_value LIKE '%I%' THEN 9
-                    WHEN s.spec_value LIKE '%J%' THEN 10
-                    WHEN s.spec_value LIKE '%K%' THEN 11
-                    WHEN s.spec_value LIKE '%L%' THEN 12
-                    WHEN s.spec_value LIKE '%F%' THEN 6
-                    WHEN s.spec_value LIKE '%E%' THEN 5
-                    WHEN s.spec_value LIKE '%D%' THEN 4
-                    WHEN s.spec_value LIKE '%C%' THEN 3
-                    WHEN s.spec_value LIKE '%B%' THEN 2
-                    WHEN s.spec_value LIKE '%A%' THEN 1
-                    WHEN s.spec_value LIKE '%AA%' THEN 0
-                    ELSE 0
-                END
-            END) >= 13
+            CASE
+                WHEN cup = 'AA' THEN 0
+                WHEN cup = 'A' THEN 1
+                WHEN cup = 'B' THEN 2
+                WHEN cup = 'C' THEN 3
+                WHEN cup = 'D' THEN 4
+                WHEN cup = 'E' THEN 5
+                WHEN cup = 'F' THEN 6
+                WHEN cup = 'G' THEN 7
+                WHEN cup = 'H' THEN 8
+                WHEN cup = 'I' THEN 9
+                WHEN cup = 'J' THEN 10
+                WHEN cup = 'K' THEN 11
+                WHEN cup = 'L' THEN 12
+                WHEN cup = 'M以上' THEN 13
+                ELSE 0
+            END >= 13
         ''')
 
     if materials:
         placeholders = ','.join(['?'] * len(materials))
-        having_conditions.append(f'MAX(CASE WHEN s.spec_key = "材質" THEN s.spec_value END) IN ({placeholders})')
+        # ★ material エイリアスを使用
+        having_conditions.append(f'material IN ({placeholders})')
         params.extend(materials)
 
     if having_conditions:
         query += ' HAVING ' + ' AND '.join(having_conditions)
 
+    # ★ cup エイリアスを使用したソート
     cup_order_case = '''
         CASE
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'AA' THEN 0
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'A' THEN 1
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'B' THEN 2
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'C' THEN 3
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'D' THEN 4
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'E' THEN 5
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'F' THEN 6
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'G' THEN 7
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'H' THEN 8
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'I' THEN 9
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'J' THEN 10
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'K' THEN 11
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'L' THEN 12
-            WHEN MAX(CASE WHEN s.spec_key = 'カップ数' THEN s.spec_value END) = 'M以上' THEN 13
+            WHEN cup = 'AA' THEN 0
+            WHEN cup = 'A' THEN 1
+            WHEN cup = 'B' THEN 2
+            WHEN cup = 'C' THEN 3
+            WHEN cup = 'D' THEN 4
+            WHEN cup = 'E' THEN 5
+            WHEN cup = 'F' THEN 6
+            WHEN cup = 'G' THEN 7
+            WHEN cup = 'H' THEN 8
+            WHEN cup = 'I' THEN 9
+            WHEN cup = 'J' THEN 10
+            WHEN cup = 'K' THEN 11
+            WHEN cup = 'L' THEN 12
+            WHEN cup = 'M以上' THEN 13
             ELSE 99
         END
     '''
@@ -309,8 +297,8 @@ def search():
         'height_desc': ('p.height_cm DESC', 'height'),
         'weight_asc': ('p.weight_kg ASC', 'weight'),
         'weight_desc': ('p.weight_kg DESC', 'weight'),
-        'bust_asc': ('MAX(CASE WHEN s.spec_key = "バスト" THEN CAST(REPLACE(s.spec_value, "cm", "") AS REAL) END) ASC', 'bust'),
-        'bust_desc': ('MAX(CASE WHEN s.spec_key = "バスト" THEN CAST(REPLACE(s.spec_value, "cm", "") AS REAL) END) DESC', 'bust'),
+        'bust_asc': ('CAST(REPLACE(bust, "cm", "") AS REAL) ASC', 'bust'),
+        'bust_desc': ('CAST(REPLACE(bust, "cm", "") AS REAL) DESC', 'bust'),
         'cup_asc': (f'{cup_order_case} ASC', 'cup'),
         'cup_desc': (f'{cup_order_case} DESC', 'cup'),
     }
@@ -322,6 +310,14 @@ def search():
 
     query += ' LIMIT ? OFFSET ?'
     params.extend([PER_PAGE, offset])
+
+    # ★ デバッグ出力（必要に応じてコメントアウト可）
+    print("=" * 60)
+    print("=== DEBUG: SQL ===")
+    print(query)
+    print("=== DEBUG: params ===")
+    print(params)
+    print("=" * 60)
 
     c.execute(query, params)
     results = c.fetchall()
