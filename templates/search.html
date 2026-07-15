@@ -380,6 +380,15 @@
         .current-filters .clear-all:hover {
             text-decoration: underline;
         }
+        /* ★ フッター余白確保（ページネーションがない場合も下部に余白） */
+        .search-results-container {
+            min-height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .search-results-container .result-list {
+            flex: 1;
+        }
 
         @media (max-width: 1200px) {
             .spec-keys, .spec-values { grid-template-columns: repeat(6, 1fr); }
@@ -556,10 +565,15 @@
                                 <option value="other" {% if request.args.get('manufacturer') == 'other' %}selected{% endif %}>その他（数字・漢字）</option>
                             </select>
                         </div>
-                        <!-- ★ 追加：メーカー名フリーテキスト検索 ★ -->
+                        <!-- メーカー名フリーテキスト検索 -->
                         <div class="filter-group">
                             <label for="manufacturer_search" class="form-label">メーカー名（部分一致）</label>
                             <input type="text" class="form-control form-control-sm" id="manufacturer_search" name="manufacturer_search" value="{{ request.args.get('manufacturer_search', '') }}" placeholder="例: WMDOLL, Irontech">
+                        </div>
+                        <!-- ★ 追加：販売サイト名検索 ★ -->
+                        <div class="filter-group">
+                            <label for="site_name" class="form-label">販売サイト名</label>
+                            <input type="text" class="form-control form-control-sm" id="site_name" name="site_name" value="{{ request.args.get('site_name', '') }}" placeholder="例: yourdoll.jp, angeldoll.jp">
                         </div>
                         <div class="filter-group">
                             <label class="form-label">材質</label>
@@ -579,7 +593,7 @@
                 </div>
             </div>
 
-            <div class="col-lg-10 col-md-9">
+            <div class="col-lg-10 col-md-9 search-results-container">
                 <div class="result-header">
                     <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件 / 全 {{ total }} 件</span>
                     <div class="sort-controls">
@@ -607,7 +621,7 @@
                     {% endfor %}
                 </form>
 
-                <!-- ★ 現在の検索条件表示（辞書内包表記を使わず、to_dict + pop で実装） ★ -->
+                <!-- ★ 現在の検索条件表示 ★ -->
                 <div class="current-filters">
                     <span><i class="bi bi-funnel"></i> 現在の条件：</span>
                     {% set has_filter = false %}
@@ -634,6 +648,16 @@
                         {% set _ = filter_params.pop('manufacturer', None) %}
                         <span class="filter-badge">
                             <i class="bi bi-tag"></i> 頭文字: {{ request.args.get('manufacturer') }}
+                            <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
+                        </span>
+                        {% set has_filter = true %}
+                    {% endif %}
+                    <!-- ★ サイト名フィルタ表示 ★ -->
+                    {% if request.args.get('site_name') %}
+                        {% set filter_params = request.args.to_dict() %}
+                        {% set _ = filter_params.pop('site_name', None) %}
+                        <span class="filter-badge">
+                            <i class="bi bi-globe"></i> サイト: {{ request.args.get('site_name') }}
                             <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
@@ -711,204 +735,207 @@
                     {% endif %}
                 </div>
 
-                {% if results %}
-                    {% for row in results %}
-                    <div class="result-card">
-                        <div class="row-top">
-                            <span class="badge bg-secondary">{{ row.manufacturer or 'メーカー不明' }}</span>
-                            <span class="tag-category 
-                                {% if row.category == '女性型' %}bg-danger
-                                {% elif row.category == '男性型' %}bg-primary
-                                {% elif row.category == 'トルソー' %}bg-success
-                                {% elif row.category == 'オナホール' %}bg-warning text-dark
-                                {% else %}bg-secondary{% endif %}">
-                                {{ row.category }}
-                            </span>
-                            <span class="tag-material">{{ row.material or '不明' }}</span>
-                            <span class="product-name">{{ row.name }}</span>
-                            <span class="product-price">
-                                {% if row.price_int and row.price_int > 0 %}
-                                    {{ row.price }}円
-                                {% else %}
-                                    <span class="text-muted">価格不明</span>
-                                {% endif %}
-                            </span>
-                            <span class="site-link-group">
-                                <span class="product-site">{{ row.site_name }}</span>
-                                <span class="product-url">
-                                    {% if row.site_name == 'yourdoll.jp' and config.YOURDOLL_REF %}
-                                        <a href="{{ row.url }}?ref={{ config.YOURDOLL_REF }}" target="_blank" rel="nofollow sponsored">
-                                            <i class="bi bi-cart-check"></i> 商品はこちらから（YourDoll）
-                                        </a>
+                <!-- 結果リスト（フッター余白確保のためラップ） -->
+                <div class="result-list">
+                    {% if results %}
+                        {% for row in results %}
+                        <div class="result-card">
+                            <div class="row-top">
+                                <span class="badge bg-secondary">{{ row.manufacturer or 'メーカー不明' }}</span>
+                                <span class="tag-category 
+                                    {% if row.category == '女性型' %}bg-danger
+                                    {% elif row.category == '男性型' %}bg-primary
+                                    {% elif row.category == 'トルソー' %}bg-success
+                                    {% elif row.category == 'オナホール' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ row.category }}
+                                </span>
+                                <span class="tag-material">{{ row.material or '不明' }}</span>
+                                <span class="product-name">{{ row.name }}</span>
+                                <span class="product-price">
+                                    {% if row.price_int and row.price_int > 0 %}
+                                        {{ row.price }}円
                                     {% else %}
-                                        <a href="{{ row.url }}" target="_blank"><i class="bi bi-box-arrow-up-right"></i> 商品ページ</a>
+                                        <span class="text-muted">価格不明</span>
                                     {% endif %}
                                 </span>
-                            </span>
+                                <span class="site-link-group">
+                                    <span class="product-site">{{ row.site_name }}</span>
+                                    <span class="product-url">
+                                        {% if row.site_name == 'yourdoll.jp' and config.YOURDOLL_REF %}
+                                            <a href="{{ row.url }}?ref={{ config.YOURDOLL_REF }}" target="_blank" rel="nofollow sponsored">
+                                                <i class="bi bi-cart-check"></i> 商品はこちらから（YourDoll）
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ row.url }}" target="_blank"><i class="bi bi-box-arrow-up-right"></i> 商品ページ</a>
+                                        {% endif %}
+                                    </span>
+                                </span>
+                            </div>
+
+                            <div class="spec-keys">
+                                <div class="cell">身長</div>
+                                <div class="cell">体重</div>
+                                <div class="cell">カップ数</div>
+                                <div class="cell">バスト</div>
+                                <div class="cell">アンダーバスト</div>
+                                <div class="cell">ウエスト</div>
+                                <div class="cell">ヒップ</div>
+                                <div class="cell">肩幅</div>
+                                <div class="cell">足サイズ</div>
+                                <div class="cell">膣の深さ</div>
+                                <div class="cell">アナルの深さ</div>
+                                <div class="cell">口の深さ</div>
+                            </div>
+
+                            <div class="spec-values">
+                                <div class="cell">
+                                    {% set val = row.height or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.weight or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} kg{% endif %}
+                                </div>
+                                <div class="cell">{{ row.cup or '-' }}</div>
+                                <div class="cell">
+                                    {% set val = row.bust or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.under_bust or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.waist or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.hip or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.shoulder or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.foot or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.vagina_depth or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.anal_depth or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                                <div class="cell">
+                                    {% set val = row.mouth_depth or '-' %}
+                                    {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
+                                </div>
+                            </div>
                         </div>
+                        {% endfor %}
 
-                        <div class="spec-keys">
-                            <div class="cell">身長</div>
-                            <div class="cell">体重</div>
-                            <div class="cell">カップ数</div>
-                            <div class="cell">バスト</div>
-                            <div class="cell">アンダーバスト</div>
-                            <div class="cell">ウエスト</div>
-                            <div class="cell">ヒップ</div>
-                            <div class="cell">肩幅</div>
-                            <div class="cell">足サイズ</div>
-                            <div class="cell">膣の深さ</div>
-                            <div class="cell">アナルの深さ</div>
-                            <div class="cell">口の深さ</div>
-                        </div>
-
-                        <div class="spec-values">
-                            <div class="cell">
-                                {% set val = row.height or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.weight or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} kg{% endif %}
-                            </div>
-                            <div class="cell">{{ row.cup or '-' }}</div>
-                            <div class="cell">
-                                {% set val = row.bust or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.under_bust or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.waist or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.hip or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.shoulder or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.foot or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.vagina_depth or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.anal_depth or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                            <div class="cell">
-                                {% set val = row.mouth_depth or '-' %}
-                                {{ val }}{% if val|string not in ['-', '/', '無し', 'なし'] and 'cm' not in val|string and 'kg' not in val|string %} cm{% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-
-                    <!-- ★ ページネーション（左右5ページ表示） ★ -->
-                    {% if total > per_page %}
-                    {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
-                    <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
-                        <ul class="pagination justify-content-center">
-                            <!-- 前へ -->
-                            {% if page > 1 %}
-                            <li class="page-item">
-                                {% set query_params = request.args.to_dict() %}
-                                {% set _ = query_params.pop('page', None) %}
-                                <a class="page-link" href="{{ url_for('search', page=page-1, **query_params) }}">« 前へ</a>
-                            </li>
-                            {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">« 前へ</span>
-                            </li>
-                            {% endif %}
-
-                            <!-- ページ番号（前後5ページ：合計11ページ表示） -->
-                            {% set page_set = [] %}
-                            {% set _ = page_set.append(1) %}
-                            {# 1ページ目の場合は後方に多く表示（+6） #}
-                            {% if page == 1 %}
-                                {% set end_offset = 6 %}
-                            {% else %}
-                                {% set end_offset = 5 %}
-                            {% endif %}
-                            {# 前後5ページを表示（1ページ目は前方が存在しないため、後方に5ページ） #}
-                            {% for p in range(page-5, page+6) %}
-                                {% if p >= 1 and p <= total_pages and p != 1 and p != total_pages %}
-                                    {% set _ = page_set.append(p) %}
-                                {% endif %}
-                            {% endfor %}
-                            {% if total_pages not in page_set %}
-                                {% set _ = page_set.append(total_pages) %}
-                            {% endif %}
-                            {% set sorted_pages = page_set|sort %}
-
-                            {% set unique_pages = [] %}
-                            {% set last_val = 0 %}
-                            {% for p in sorted_pages %}
-                                {% if p != last_val %}
-                                    {% set _ = unique_pages.append(p) %}
-                                    {% set last_val = p %}
-                                {% endif %}
-                            {% endfor %}
-
-                            {# loop.previtem でスコープ問題回避 #}
-                            {% for p in unique_pages %}
-                                {% if loop.previtem and p - loop.previtem > 1 %}
-                                    <li class="page-item disabled"><span class="page-link">…</span></li>
-                                {% endif %}
-                                {% if p == page %}
-                                    <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                        <!-- ★ ページネーション（左右5ページ表示） ★ -->
+                        {% if total > per_page %}
+                        {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
+                        <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
+                            <ul class="pagination justify-content-center">
+                                <!-- 前へ -->
+                                {% if page > 1 %}
+                                <li class="page-item">
+                                    {% set query_params = request.args.to_dict() %}
+                                    {% set _ = query_params.pop('page', None) %}
+                                    <a class="page-link" href="{{ url_for('search', page=page-1, **query_params) }}">« 前へ</a>
+                                </li>
                                 {% else %}
-                                    <li class="page-item">
-                                        {% set query_params = request.args.to_dict() %}
-                                        {% set _ = query_params.pop('page', None) %}
-                                        <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
-                                    </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">« 前へ</span>
+                                </li>
                                 {% endif %}
-                            {% endfor %}
 
-                            <!-- 次へ -->
-                            {% if page < total_pages %}
-                            <li class="page-item">
-                                {% set query_params = request.args.to_dict() %}
-                                {% set _ = query_params.pop('page', None) %}
-                                <a class="page-link" href="{{ url_for('search', page=page+1, **query_params) }}">次へ »</a>
-                            </li>
-                            {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">次へ »</span>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                    {% endif %}
+                                <!-- ページ番号（前後5ページ：合計11ページ表示） -->
+                                {% set page_set = [] %}
+                                {% set _ = page_set.append(1) %}
+                                {# 1ページ目の場合は後方に多く表示（+6） #}
+                                {% if page == 1 %}
+                                    {% set end_offset = 6 %}
+                                {% else %}
+                                    {% set end_offset = 5 %}
+                                {% endif %}
+                                {# 前後5ページを表示（1ページ目は前方が存在しないため、後方に5ページ） #}
+                                {% for p in range(page-5, page+6) %}
+                                    {% if p >= 1 and p <= total_pages and p != 1 and p != total_pages %}
+                                        {% set _ = page_set.append(p) %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if total_pages not in page_set %}
+                                    {% set _ = page_set.append(total_pages) %}
+                                {% endif %}
+                                {% set sorted_pages = page_set|sort %}
 
-                {% else %}
-                    <div class="alert alert-info text-center" role="alert">
-                        <i class="bi bi-search-heart me-2"></i>該当する商品がありません。
-                        <div class="mt-2">
-                            <small>
-                                ヒント：キーワードを変えるか、<a href="{{ url_for('search') }}" class="alert-link">フィルタをリセット</a>してお試しください。
-                            </small>
-                            <br>
-                            <small class="text-muted">
-                                おすすめ検索ワード：
-                                <span class="badge bg-secondary">シリコン</span>
-                                <span class="badge bg-secondary">女性型</span>
-                                <span class="badge bg-secondary">150cm</span>
-                                <span class="badge bg-secondary">5万円</span>
-                            </small>
+                                {% set unique_pages = [] %}
+                                {% set last_val = 0 %}
+                                {% for p in sorted_pages %}
+                                    {% if p != last_val %}
+                                        {% set _ = unique_pages.append(p) %}
+                                        {% set last_val = p %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                {# loop.previtem でスコープ問題回避 #}
+                                {% for p in unique_pages %}
+                                    {% if loop.previtem and p - loop.previtem > 1 %}
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    {% endif %}
+                                    {% if p == page %}
+                                        <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            {% set query_params = request.args.to_dict() %}
+                                            {% set _ = query_params.pop('page', None) %}
+                                            <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                <!-- 次へ -->
+                                {% if page < total_pages %}
+                                <li class="page-item">
+                                    {% set query_params = request.args.to_dict() %}
+                                    {% set _ = query_params.pop('page', None) %}
+                                    <a class="page-link" href="{{ url_for('search', page=page+1, **query_params) }}">次へ »</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">次へ »</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="alert alert-info text-center" role="alert">
+                            <i class="bi bi-search-heart me-2"></i>該当する商品がありません。
+                            <div class="mt-2">
+                                <small>
+                                    ヒント：キーワードを変えるか、<a href="{{ url_for('search') }}" class="alert-link">フィルタをリセット</a>してお試しください。
+                                </small>
+                                <br>
+                                <small class="text-muted">
+                                    おすすめ検索ワード：
+                                    <span class="badge bg-secondary">シリコン</span>
+                                    <span class="badge bg-secondary">女性型</span>
+                                    <span class="badge bg-secondary">150cm</span>
+                                    <span class="badge bg-secondary">5万円</span>
+                                </small>
+                            </div>
                         </div>
-                    </div>
-                {% endif %}
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
