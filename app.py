@@ -133,7 +133,6 @@ def privacy():
 
 @app.route('/search', methods=['GET'])
 def search():
-    # ★ 最初のリクエストでインデックス作成（遅延実行）
     ensure_indexes()
 
     if not session.get('age_verified'):
@@ -161,52 +160,89 @@ def search():
     conn = get_db_connection()
     c = conn.cursor()
 
-    query = '''
-        SELECT
-            p.id, p.name, p.price, p.url, p.category,
-            p.height_cm AS height,
-            p.weight_kg AS weight,
-            p.foot_cm AS foot,
-            p.price_int AS price_int,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'カップ数') AS cup,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'バスト') AS bust,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アンダーバスト') AS under_bust,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ウエスト') AS waist,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ヒップ') AS hip,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '肩幅') AS shoulder,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '膣の深さ') AS vagina_depth,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アナルの深さ') AS anal_depth,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '口の深さ') AS mouth_depth,
-            (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '材質') AS material
-        FROM products p
-        WHERE 1=1
-    '''
-    params = []
+    # ★ FTS5全文検索を使用するかどうか（キーワードがある場合）
+    use_fts = keyword and len(keyword) >= 2
 
-    if keyword:
-        words = keyword.strip().split()
-        for word in words:
-            subquery = """
-                (
-                    p.name LIKE ?
-                    OR p.category LIKE ?
-                    OR p.manufacturer LIKE ?
-                    OR EXISTS (
-                        SELECT 1 FROM specs s2
-                        WHERE s2.product_id = p.id
-                        AND s2.spec_key = '材質'
-                        AND s2.spec_value LIKE ?
+    if use_fts:
+        # FTS5テーブルが存在するか確認
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products_fts'")
+        if c.fetchone():
+            # FTS5検索を使用（高速）
+            # キーワードをスペース区切りでAND検索用に変換
+            fts_keyword = ' AND '.join([f'"{w}"' for w in keyword.split()])
+            query = '''
+                SELECT
+                    p.id, p.name, p.price, p.url, p.category,
+                    p.height_cm AS height,
+                    p.weight_kg AS weight,
+                    p.foot_cm AS foot,
+                    p.price_int AS price_int,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'カップ数') AS cup,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'バスト') AS bust,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アンダーバスト') AS under_bust,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ウエスト') AS waist,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ヒップ') AS hip,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '肩幅') AS shoulder,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '膣の深さ') AS vagina_depth,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アナルの深さ') AS anal_depth,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '口の深さ') AS mouth_depth,
+                    (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '材質') AS material
+                FROM products p
+                JOIN products_fts fts ON p.id = fts.rowid
+                WHERE products_fts MATCH ?
+                AND 1=1
+            '''
+            params = [fts_keyword]
+        else:
+            use_fts = False
+
+    if not use_fts:
+        # 従来のLIKE検索（フォールバック）
+        query = '''
+            SELECT
+                p.id, p.name, p.price, p.url, p.category,
+                p.height_cm AS height,
+                p.weight_kg AS weight,
+                p.foot_cm AS foot,
+                p.price_int AS price_int,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'カップ数') AS cup,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'バスト') AS bust,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アンダーバスト') AS under_bust,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ウエスト') AS waist,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'ヒップ') AS hip,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '肩幅') AS shoulder,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '膣の深さ') AS vagina_depth,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = 'アナルの深さ') AS anal_depth,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '口の深さ') AS mouth_depth,
+                (SELECT MAX(spec_value) FROM specs WHERE product_id = p.id AND spec_key = '材質') AS material
+            FROM products p
+            WHERE 1=1
+        '''
+        params = []
+        if keyword:
+            words = keyword.strip().split()
+            for word in words:
+                subquery = """
+                    (
+                        p.name LIKE ?
+                        OR p.category LIKE ?
+                        OR p.manufacturer LIKE ?
+                        OR EXISTS (
+                            SELECT 1 FROM specs s2
+                            WHERE s2.product_id = p.id
+                            AND s2.spec_key = '材質'
+                            AND s2.spec_value LIKE ?
+                        )
+                        OR EXISTS (
+                            SELECT 1 FROM specs s2
+                            WHERE s2.product_id = p.id
+                            AND s2.spec_key = 'カップ数'
+                            AND s2.spec_value LIKE ?
+                        )
                     )
-                    OR EXISTS (
-                        SELECT 1 FROM specs s2
-                        WHERE s2.product_id = p.id
-                        AND s2.spec_key = 'カップ数'
-                        AND s2.spec_value LIKE ?
-                    )
-                )
-            """
-            params.extend([f'%{word}%'] * 5)
-            query += f' AND {subquery}'
+                """
+                params.extend([f'%{word}%'] * 5)
+                query += f' AND {subquery}'
 
     if height_min:
         query += ' AND p.height_cm >= ?'
@@ -394,7 +430,6 @@ def search():
                            page=page,
                            total=total,
                            per_page=PER_PAGE)
-
 
 @app.route('/012d8cfd3eec704c72e046dfd2b72ee0.html')
 def verify_exoclick():
