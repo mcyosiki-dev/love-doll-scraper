@@ -10,9 +10,6 @@ from functools import lru_cache
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# ============================================================
-# ★ セッション設定
-# ============================================================
 app.permanent_session_lifetime = timedelta(days=7)
 
 app.config.update(
@@ -22,11 +19,8 @@ app.config.update(
     SESSION_COOKIE_PATH='/',
 )
 
-# ============================================================
-# ★ 簡易キャッシュ（メモリ内）
-# ============================================================
 _cache = {}
-CACHE_EXPIRE = 60  # 秒
+CACHE_EXPIRE = 60
 
 def get_cache_key(query, params):
     key_str = query + str(params)
@@ -49,26 +43,20 @@ PER_PAGE = 30
 
 YOURDOLL_REF = os.environ.get('YOURDOLL_REF', '')
 
-
 @app.context_processor
 def inject_config():
-    return dict(config={
-        'YOURDOLL_REF': YOURDOLL_REF,
-    })
-
+    return dict(config={'YOURDOLL_REF': YOURDOLL_REF})
 
 def get_db_connection():
     conn = sqlite3.connect('dolls.db')
     conn.row_factory = sqlite3.Row
     return conn
 
-
 def extract_site_name(url):
     if not url:
         return ''
     domain = re.sub(r'^https?://(www\.)?', '', url)
     return domain.split('/')[0]
-
 
 _indexes_created = False
 
@@ -107,7 +95,6 @@ def ensure_indexes():
     except Exception as e:
         print(f"⚠️ インデックス作成エラー: {e}")
 
-
 @lru_cache(maxsize=1)
 def get_all_categories():
     conn = get_db_connection()
@@ -116,7 +103,6 @@ def get_all_categories():
     rows = [row['category'] for row in c.fetchall()]
     conn.close()
     return rows
-
 
 @lru_cache(maxsize=1)
 def get_all_materials():
@@ -127,11 +113,9 @@ def get_all_materials():
     conn.close()
     return rows
 
-
 @app.route('/')
 def top():
     return render_template('top.html')
-
 
 @app.route('/age-verify', methods=['POST'])
 def age_verify():
@@ -143,16 +127,13 @@ def age_verify():
     else:
         return render_template('age_denied.html')
 
-
 @app.route('/legal')
 def legal():
     return render_template('legal.html')
 
-
 @app.route('/privacy')
 def privacy():
     return render_template('privacy.html')
-
 
 @app.route('/search', methods=['GET'])
 def search():
@@ -361,33 +342,36 @@ def search():
     else:
         query += ' ORDER BY p.id'
 
-    # ★★★ 確実な total クエリ生成 ★★★
-    # 1. "FROM products p" の位置を特定して、SELECT句だけを置き換える
-    from_pos = query.upper().find('FROM PRODUCTS P')
-    if from_pos != -1:
-        count_query = 'SELECT COUNT(DISTINCT p.id) AS total ' + query[from_pos:]
-    else:
-        # フォールバック（万が一）
-        count_query = re.sub(
-            r'SELECT\s+.*?\s+FROM\s+products\s+p',
-            'SELECT COUNT(DISTINCT p.id) AS total FROM products p',
-            query,
-            flags=re.DOTALL | re.IGNORECASE
-        )
-
-    # 2. ORDER BY を削除
-    count_query = re.sub(r'\s+ORDER\s+BY\s+.*?(?=\s+LIMIT|$)', '', count_query, flags=re.IGNORECASE)
-    # 3. LIMIT/OFFSET を削除
+    # ★ total クエリ生成（確実な方法：正規表現で置換）
+    import re
+    count_query = re.sub(
+        r'^SELECT\s+.*?\s+FROM\s+products\s+p',
+        'SELECT COUNT(DISTINCT p.id) AS total FROM products p',
+        query,
+        flags=re.DOTALL | re.IGNORECASE,
+        count=1
+    )
+    # ORDER BY を削除
+    order_match = re.search(r'\s+ORDER\s+BY\s+', count_query, re.IGNORECASE)
+    if order_match:
+        count_query = count_query[:order_match.start()]
+    # LIMIT/OFFSET を削除
     count_query = re.sub(r'\s+LIMIT\s+\?\s+OFFSET\s+\?', '', count_query, flags=re.IGNORECASE)
     count_params = params[:-2] if len(params) >= 2 else params[:]
+
+    # ★★★ デバッグ出力 ★★★
+    print("=" * 60)
+    print("=== count_query ===")
+    print(count_query)
+    print("=== count_params ===")
+    print(count_params)
+    print("=" * 60)
 
     try:
         c.execute(count_query, count_params)
         total = c.fetchone()[0]
     except Exception as e:
         print(f"⚠️ カウントクエリエラー: {e}")
-        print(f"   count_query: {count_query}")
-        print(f"   count_params: {count_params}")
         total = 0
 
     query += ' LIMIT ? OFFSET ?'
@@ -467,16 +451,13 @@ def search():
 def verify_exoclick():
     return "012d8cfd3eec704c72e046dfd2b72ee0"
 
-
 @app.route('/8823b79722a732180d4e970ca4900eb4.html')
 def verify_exoclick_new():
     return "8823b79722a732180d4e970ca4900eb4"
 
-
 @app.route('/sitemap.xml')
 def sitemap():
     return send_from_directory('static', 'sitemap.xml')
-
 
 if __name__ == '__main__':
     app.run(debug=True)
