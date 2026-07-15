@@ -178,10 +178,8 @@ def search():
     page = request.args.get('page', 1, type=int)
     manufacturers = ','.join(sorted(request.args.getlist('manufacturer')))
     manufacturer_search = request.args.get('manufacturer_search', '').strip()
-    # ★ 追加：販売サイト名（site_name）
     site_name = request.args.get('site_name', '').strip()
 
-    # ★ キャッシュキーに site_name を追加
     cache_key = f"{keyword}|{height_min}|{height_max}|{weight_min}|{weight_max}|{foot_min}|{foot_max}|{price_min}|{price_max}|{selected_cups}|{cup_m_or_more}|{categories}|{materials}|{sort_by}|{page}|{manufacturers}|{manufacturer_search}|{site_name}"
     cache_key = hashlib.md5(cache_key.encode()).hexdigest()
 
@@ -257,47 +255,20 @@ def search():
                 query += f' AND p.id IN ({placeholders})'
                 params.extend(fts_ids)
             else:
-                conn.close()
-                return render_template('search.html',
-                                       results=[],
-                                       keyword=keyword,
-                                       height_min=height_min,
-                                       height_max=height_max,
-                                       weight_min=weight_min,
-                                       weight_max=weight_max,
-                                       foot_min=foot_min,
-                                       foot_max=foot_max,
-                                       price_min=price_min,
-                                       price_max=price_max,
-                                       height_min_val=0,
-                                       height_max_val=100,
-                                       weight_min_val=0,
-                                       weight_max_val=70,
-                                       foot_min_val=0,
-                                       foot_max_val=30,
-                                       price_min_val=0,
-                                       price_max_val=1000000,
-                                       selected_cups=request.args.getlist('cup'),
-                                       cup_m_or_more=cup_m_or_more,
-                                       selected_categories=request.args.getlist('category'),
-                                       all_categories=get_all_categories(),
-                                       selected_materials=request.args.getlist('material'),
-                                       all_materials=get_all_materials(),
-                                       available_cups=CUP_ORDER,
-                                       sort_by=sort_by,
-                                       page=page,
-                                       total=0,
-                                       per_page=PER_PAGE)
+                # ★ FTS5でヒットしなかった場合、LIKE検索にフォールバック（urlも含める）
+                for word in keyword.split():
+                    query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ? OR p.url LIKE ?)'
+                    params.extend([f'%{word}%'] * 4)
         else:
+            # FTS5が存在しない場合のフォールバック（urlも含める）
             for word in keyword.split():
-                query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ?)'
-                params.extend([f'%{word}%'] * 3)
+                query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ? OR p.url LIKE ?)'
+                params.extend([f'%{word}%'] * 4)
 
     if manufacturer_search:
         query += ' AND p.manufacturer LIKE ?'
         params.append(f'%{manufacturer_search}%')
 
-    # ★ 追加：販売サイト名（site_name）による検索
     if site_name:
         query += ' AND p.url LIKE ?'
         params.append(f'%{site_name}%')
