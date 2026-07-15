@@ -660,7 +660,7 @@
                     </div>
                     {% endfor %}
 
-                    <!-- ★ ページネーション（再修正版：重複排除済み） ★ -->
+                    <!-- ★ ページネーション（シンプル修正版：重複排除済み） ★ -->
                     {% if total > per_page %}
                     {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                     <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
@@ -678,46 +678,41 @@
                             </li>
                             {% endif %}
 
-                            <!-- ページ番号（重複排除済み） -->
-                            {% set page_numbers = [] %}
-                            {# 最初のページを追加 #}
-                            {% set _ = page_numbers.append(1) %}
-                            {# 現在ページの前後2ページを追加 #}
-                            {% for p in range(page - 2, page + 3) %}
+                            <!-- ページ番号（シンプル版） -->
+                            {% set page_list = [] %}
+                            {# 1. 最初のページを追加 #}
+                            {% set _ = page_list.append(1) %}
+                            {# 2. 現在ページの前後2ページを追加（1と最終ページ以外） #}
+                            {% for p in range(page-2, page+3) %}
                                 {% if p >= 1 and p <= total_pages and p != 1 and p != total_pages %}
-                                    {% set _ = page_numbers.append(p) %}
+                                    {% set _ = page_list.append(p) %}
                                 {% endif %}
                             {% endfor %}
-                            {# 最後のページを追加 #}
-                            {% if total_pages not in page_numbers %}
-                                {% set _ = page_numbers.append(total_pages) %}
+                            {# 3. 最後のページを追加 #}
+                            {% if total_pages not in page_list %}
+                                {% set _ = page_list.append(total_pages) %}
                             {% endif %}
-                            {# ソートして重複を排除 #}
-                            {% set page_numbers = page_numbers|sort %}
-                            {% set unique_numbers = [] %}
-                            {% set last = 0 %}
-                            {% for p in page_numbers %}
-                                {% if p != last %}
-                                    {% set _ = unique_numbers.append(p) %}
-                                    {% set last = p %}
-                                {% endif %}
-                            {% endfor %}
+                            {# 4. ソート #}
+                            {% set page_list = page_list|sort %}
 
-                            {% set prev = 0 %}
-                            {% for p in unique_numbers %}
-                                {% if p - prev > 1 %}
-                                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {# 5. 重複を排除しながら表示 #}
+                            {% set last_shown = 0 %}
+                            {% for p in page_list %}
+                                {% if p != last_shown %}
+                                    {% if p - last_shown > 1 %}
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    {% endif %}
+                                    {% if p == page %}
+                                        <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            {% set query_params = request.args.to_dict() %}
+                                            {% set _ = query_params.pop('page', None) %}
+                                            <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
+                                        </li>
+                                    {% endif %}
+                                    {% set last_shown = p %}
                                 {% endif %}
-                                {% if p == page %}
-                                    <li class="page-item active"><span class="page-link">{{ p }}</span></li>
-                                {% else %}
-                                    <li class="page-item">
-                                        {% set query_params = request.args.to_dict() %}
-                                        {% set _ = query_params.pop('page', None) %}
-                                        <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
-                                    </li>
-                                {% endif %}
-                                {% set prev = p %}
                             {% endfor %}
 
                             <!-- 次へ -->
