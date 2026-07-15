@@ -9,31 +9,23 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # ============================================================
-# ★ セッション設定（ページネーションでセッションが失われる問題の修正）
+# ★ セッション設定
 # ============================================================
-# セッション有効期限を7日に延長
 app.permanent_session_lifetime = timedelta(days=7)
 
-# セッションCookieの設定
 app.config.update(
-    SESSION_COOKIE_HTTPONLY=True,  # JavaScriptからのアクセスを防止
-    SESSION_COOKIE_SAMESITE='Lax',  # クロスサイトリクエストでもCookieを送信
-    SESSION_COOKIE_SECURE=os.environ.get('RENDER', 'false').lower() == 'true',  # Render本番でのみSecureを有効
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=os.environ.get('RENDER', 'false').lower() == 'true',
     SESSION_COOKIE_PATH='/',
 )
 
 CUP_ORDER = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 PER_PAGE = 30
 
-# ============================================================
-# ★ アフィリエイト用環境変数
-# ============================================================
 YOURDOLL_REF = os.environ.get('YOURDOLL_REF', '')
 
 
-# ============================================================
-# ★ テンプレートで config.YOURDOLL_REF として参照可能にする
-# ============================================================
 @app.context_processor
 def inject_config():
     return dict(config={
@@ -54,7 +46,13 @@ def extract_site_name(url):
     return domain.split('/')[0]
 
 
-def create_indexes():
+# ★ インデックス作成関数（遅延実行用）
+_indexes_created = False
+
+def ensure_indexes():
+    global _indexes_created
+    if _indexes_created:
+        return
     try:
         conn = get_db_connection()
         c = conn.cursor()
@@ -81,11 +79,10 @@ def create_indexes():
         c.execute('CREATE INDEX IF NOT EXISTS idx_specs_key_value ON specs(spec_key, spec_value)')
         conn.commit()
         conn.close()
+        _indexes_created = True
+        print("✅ インデックス作成完了（遅延実行）")
     except Exception as e:
-        print(f"インデックス作成エラー: {e}")
-
-
-create_indexes()
+        print(f"⚠️ インデックス作成エラー: {e}")
 
 
 @lru_cache(maxsize=1)
@@ -118,7 +115,6 @@ def age_verify():
     answer = request.form.get('age_confirm')
     if answer == 'yes':
         session['age_verified'] = True
-        # ★ セッションを永続化（有効期限を延長）
         session.permanent = True
         return redirect(url_for('search'))
     else:
@@ -137,6 +133,9 @@ def privacy():
 
 @app.route('/search', methods=['GET'])
 def search():
+    # ★ 最初のリクエストでインデックス作成（遅延実行）
+    ensure_indexes()
+
     if not session.get('age_verified'):
         return redirect(url_for('top'))
 
@@ -162,7 +161,6 @@ def search():
     conn = get_db_connection()
     c = conn.cursor()
 
-    # ★ 本修正：LEFT JOIN をサブクエリに変更
     query = '''
         SELECT
             p.id, p.name, p.price, p.url, p.category,
@@ -185,7 +183,6 @@ def search():
     '''
     params = []
 
-    # ★ キーワード検索（AND検索＋対象カラム拡張）
     if keyword:
         words = keyword.strip().split()
         for word in words:
