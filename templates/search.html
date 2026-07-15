@@ -660,7 +660,7 @@
                     </div>
                     {% endfor %}
 
-                    <!-- ★ ページネーション（改善版：理想の表示） ★ -->
+                    <!-- ★ ページネーション（改善版：最初・最後を常に表示、前後2ページ表示） ★ -->
                     {% if total > per_page %}
                     {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                     <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
@@ -678,18 +678,13 @@
                             </li>
                             {% endif %}
 
-                            <!-- ページ番号（理想の表示） -->
-                            {# 表示するページ番号のリストを構築 #}
-                            {% set page_numbers = [] %}
-                            {# 最初のページは常に表示 #}
-                            {% set _ = page_numbers.append(1) %}
-                            {# 現在ページの前後2ページ #}
+                            <!-- ページ番号 -->
+                            {% set page_numbers = [1] %}
                             {% for p in range(page - 2, page + 3) %}
                                 {% if p >= 1 and p <= total_pages and p not in page_numbers %}
                                     {% set _ = page_numbers.append(p) %}
                                 {% endif %}
                             {% endfor %}
-                            {# 最後のページは常に表示 #}
                             {% if total_pages not in page_numbers %}
                                 {% set _ = page_numbers.append(total_pages) %}
                             {% endif %}
