@@ -57,9 +57,13 @@ def create_indexes():
             c.execute('CREATE INDEX IF NOT EXISTS idx_products_foot_cm ON products(foot_cm)')
         if 'price_int' in columns:
             c.execute('CREATE INDEX IF NOT EXISTS idx_products_price_int ON products(price_int)')
+        if 'site_name' in columns:
+            c.execute('CREATE INDEX IF NOT EXISTS idx_products_site_name ON products(site_name)')
         c.execute('CREATE INDEX IF NOT EXISTS idx_products_id ON products(id)')
         c.execute('CREATE INDEX IF NOT EXISTS idx_specs_product_id ON specs(product_id)')
         c.execute('CREATE INDEX IF NOT EXISTS idx_specs_key ON specs(spec_key)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_specs_product_key ON specs(product_id, spec_key)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_specs_key_value ON specs(spec_key, spec_value)')
         conn.commit()
         conn.close()
     except Exception as e:
@@ -136,9 +140,6 @@ def search():
     page = request.args.get('page', 1, type=int)
     offset = (page - 1) * PER_PAGE
 
-    # ============================================================
-    # ★ メーカーフィルター（WebAIのフロントエンド実装完了により有効化）
-    # ============================================================
     manufacturers = request.args.getlist('manufacturer')
 
     conn = get_db_connection()
@@ -167,9 +168,24 @@ def search():
     '''
     params = []
 
+    # ★ キーワード検索（AND検索＋対象カラム拡張）
     if keyword:
-        query += ' AND p.name LIKE ?'
-        params.append(f'%{keyword}%')
+        words = keyword.strip().split()
+        for word in words:
+            subquery = """
+                EXISTS (
+                    SELECT 1 FROM specs s2
+                    WHERE s2.product_id = p.id
+                    AND s2.spec_key IN ('材質', 'カップ数')
+                    AND s2.spec_value LIKE ?
+                )
+                OR p.name LIKE ?
+                OR p.category LIKE ?
+                OR p.manufacturer LIKE ?
+            """
+            params.extend([f'%{word}%'] * 5)
+            query += f' AND ({subquery})'
+
     if height_min:
         query += ' AND p.height_cm >= ?'
         params.append(float(height_min))
@@ -199,7 +215,6 @@ def search():
         query += f' AND p.category IN ({placeholders})'
         params.extend(categories)
 
-    # ★ メーカーフィルター（有効化）
     if manufacturers:
         placeholders = ','.join(['?'] * len(manufacturers))
         query += f' AND p.manufacturer IN ({placeholders})'
