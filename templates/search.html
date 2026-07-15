@@ -660,7 +660,7 @@
                     </div>
                     {% endfor %}
 
-                    <!-- ★ ページネーション（改善版：最初・最後を常に表示） ★ -->
+                    <!-- ★ ページネーション（改善版：理想の表示） ★ -->
                     {% if total > per_page %}
                     {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                     <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
@@ -678,19 +678,26 @@
                             </li>
                             {% endif %}
 
-                            <!-- ページ番号（最初・最後を常に表示、前後2ページを表示、それ以外は省略） -->
-                            {% set pages_to_show = [] %}
-                            {% set page_range = [1, 2, 3, total_pages - 2, total_pages - 1, total_pages] %}
-                            {% for p in page_range %}
-                                {% if p >= 1 and p <= total_pages %}
-                                    {% set _ = pages_to_show.append(p) %}
+                            <!-- ページ番号（理想の表示） -->
+                            {# 表示するページ番号のリストを構築 #}
+                            {% set page_numbers = [] %}
+                            {# 最初のページは常に表示 #}
+                            {% set _ = page_numbers.append(1) %}
+                            {# 現在ページの前後2ページ #}
+                            {% for p in range(page - 2, page + 3) %}
+                                {% if p >= 1 and p <= total_pages and p not in page_numbers %}
+                                    {% set _ = page_numbers.append(p) %}
                                 {% endif %}
                             {% endfor %}
-                            {% set pages_to_show = pages_to_show|unique|sort %}
+                            {# 最後のページは常に表示 #}
+                            {% if total_pages not in page_numbers %}
+                                {% set _ = page_numbers.append(total_pages) %}
+                            {% endif %}
+                            {% set page_numbers = page_numbers|sort %}
 
-                            {% set prev_page = 0 %}
-                            {% for p in pages_to_show %}
-                                {% if p - prev_page > 1 %}
+                            {% set prev = 0 %}
+                            {% for p in page_numbers %}
+                                {% if p - prev > 1 %}
                                     <li class="page-item disabled"><span class="page-link">…</span></li>
                                 {% endif %}
                                 {% if p == page %}
@@ -702,7 +709,7 @@
                                         <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
                                     </li>
                                 {% endif %}
-                                {% set prev_page = p %}
+                                {% set prev = p %}
                             {% endfor %}
 
                             <!-- 次へ -->
