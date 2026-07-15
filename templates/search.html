@@ -660,7 +660,7 @@
                     </div>
                     {% endfor %}
 
-                    <!-- ★ ページネーション（シンプル修正版：重複排除済み） ★ -->
+                    <!-- ★ ページネーション（最終修正版：Jinja2スコープ問題回避） ★ -->
                     {% if total > per_page %}
                     {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                     <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
@@ -678,41 +678,48 @@
                             </li>
                             {% endif %}
 
-                            <!-- ページ番号（シンプル版） -->
-                            {% set page_list = [] %}
-                            {# 1. 最初のページを追加 #}
-                            {% set _ = page_list.append(1) %}
-                            {# 2. 現在ページの前後2ページを追加（1と最終ページ以外） #}
+                            <!-- ページ番号（完全に重複排除＆ソート済み） -->
+                            {# 表示するページ番号をセットで管理（Jinja2ではset代わりにリストと重複排除） #}
+                            {% set raw_pages = [] %}
+                            {% set _ = raw_pages.append(1) %}
                             {% for p in range(page-2, page+3) %}
                                 {% if p >= 1 and p <= total_pages and p != 1 and p != total_pages %}
-                                    {% set _ = page_list.append(p) %}
+                                    {% set _ = raw_pages.append(p) %}
                                 {% endif %}
                             {% endfor %}
-                            {# 3. 最後のページを追加 #}
-                            {% if total_pages not in page_list %}
-                                {% set _ = page_list.append(total_pages) %}
+                            {% if total_pages not in raw_pages %}
+                                {% set _ = raw_pages.append(total_pages) %}
                             {% endif %}
-                            {# 4. ソート #}
-                            {% set page_list = page_list|sort %}
 
-                            {# 5. 重複を排除しながら表示 #}
-                            {% set last_shown = 0 %}
-                            {% for p in page_list %}
-                                {% if p != last_shown %}
-                                    {% if p - last_shown > 1 %}
-                                        <li class="page-item disabled"><span class="page-link">…</span></li>
-                                    {% endif %}
-                                    {% if p == page %}
-                                        <li class="page-item active"><span class="page-link">{{ p }}</span></li>
-                                    {% else %}
-                                        <li class="page-item">
-                                            {% set query_params = request.args.to_dict() %}
-                                            {% set _ = query_params.pop('page', None) %}
-                                            <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
-                                        </li>
-                                    {% endif %}
-                                    {% set last_shown = p %}
+                            {# ソート（Jinja2のsortフィルタは新しいリストを返す） #}
+                            {% set sorted_pages = raw_pages|sort %}
+
+                            {# 重複排除（新しいリストに順次追加） #}
+                            {% set unique_pages = [] %}
+                            {% set last_val = 0 %}
+                            {% for p in sorted_pages %}
+                                {% if p != last_val %}
+                                    {% set _ = unique_pages.append(p) %}
+                                    {% set last_val = p %}
                                 {% endif %}
+                            {% endfor %}
+
+                            {# 表示ループ（unique_pagesは既にソート済み＆重複なし） #}
+                            {% set prev = 0 %}
+                            {% for p in unique_pages %}
+                                {% if p - prev > 1 %}
+                                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                {% if p == page %}
+                                    <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                                {% else %}
+                                    <li class="page-item">
+                                        {% set query_params = request.args.to_dict() %}
+                                        {% set _ = query_params.pop('page', None) %}
+                                        <a class="page-link" href="{{ url_for('search', page=p, **query_params) }}">{{ p }}</a>
+                                    </li>
+                                {% endif %}
+                                {% set prev = p %}
                             {% endfor %}
 
                             <!-- 次へ -->
