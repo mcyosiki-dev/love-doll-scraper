@@ -660,7 +660,7 @@
                     </div>
                     {% endfor %}
 
-                    <!-- ★ ページネーション（loop.previtem使用版：スコープ問題完全回避） ★ -->
+                    <!-- ★ ページネーション（1ページ目は後方に多く表示） ★ -->
                     {% if total > per_page %}
                     {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                     <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
@@ -678,10 +678,16 @@
                             </li>
                             {% endif %}
 
-                            <!-- ページ番号（ユニーク＆ソート済み） -->
+                            <!-- ページ番号 -->
                             {% set page_set = [] %}
                             {% set _ = page_set.append(1) %}
-                            {% for p in range(page-2, page+3) %}
+                            {# 1ページ目の場合は後方に多く表示（+6）、それ以外は+3 #}
+                            {% if page == 1 %}
+                                {% set end_offset = 6 %}
+                            {% else %}
+                                {% set end_offset = 3 %}
+                            {% endif %}
+                            {% for p in range(page-2, page+end_offset) %}
                                 {% if p >= 1 and p <= total_pages and p != 1 and p != total_pages %}
                                     {% set _ = page_set.append(p) %}
                                 {% endif %}
@@ -700,7 +706,7 @@
                                 {% endif %}
                             {% endfor %}
 
-                            {# ★ loop.previtem を使用してスコープ問題を完全に回避 ★ #}
+                            {# loop.previtem でスコープ問題回避 #}
                             {% for p in unique_pages %}
                                 {% if loop.previtem and p - loop.previtem > 1 %}
                                     <li class="page-item disabled"><span class="page-link">…</span></li>
