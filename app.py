@@ -361,15 +361,24 @@ def search():
     else:
         query += ' ORDER BY p.id'
 
-    # ★ 修正点：re.DOTALL フラグを追加
-    count_query = re.sub(r'SELECT.*FROM products p', 'SELECT COUNT(DISTINCT p.id) AS total FROM products p', query, flags=re.DOTALL)
-    count_params = params[:len(params) - 2] if sort_by in sort_map else params[:]
+    # ★ 修正：total 用のクエリを確実に生成（ORDER BY と LIMIT/OFFSET を除去）
+    count_query = re.sub(
+        r'SELECT\s+.*?\s+FROM\s+products\s+p',
+        'SELECT COUNT(DISTINCT p.id) AS total FROM products p',
+        query,
+        flags=re.DOTALL | re.IGNORECASE
+    )
+    count_query = re.sub(r'\s+ORDER\s+BY\s+.*?(?=\s+LIMIT|$)', '', count_query, flags=re.IGNORECASE)
+    count_query = re.sub(r'\s+LIMIT\s+\?\s+OFFSET\s+\?', '', count_query, flags=re.IGNORECASE)
+    count_params = params[:-2]
 
     try:
         c.execute(count_query, count_params)
         total = c.fetchone()[0]
     except Exception as e:
         print(f"⚠️ カウントクエリエラー: {e}")
+        print(f"   count_query: {count_query}")
+        print(f"   count_params: {count_params}")
         total = 0
 
     query += ' LIMIT ? OFFSET ?'
