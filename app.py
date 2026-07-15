@@ -177,11 +177,12 @@ def search():
     sort_by = request.args.get('sort_by', 'price_asc')
     page = request.args.get('page', 1, type=int)
     manufacturers = ','.join(sorted(request.args.getlist('manufacturer')))
-    # ★ 追加：メーカー名フリーテキスト検索
     manufacturer_search = request.args.get('manufacturer_search', '').strip()
+    # ★ 追加：販売サイト名（site_name）
+    site_name = request.args.get('site_name', '').strip()
 
-    # ★ キャッシュキーに manufacturer_search を追加
-    cache_key = f"{keyword}|{height_min}|{height_max}|{weight_min}|{weight_max}|{foot_min}|{foot_max}|{price_min}|{price_max}|{selected_cups}|{cup_m_or_more}|{categories}|{materials}|{sort_by}|{page}|{manufacturers}|{manufacturer_search}"
+    # ★ キャッシュキーに site_name を追加
+    cache_key = f"{keyword}|{height_min}|{height_max}|{weight_min}|{weight_max}|{foot_min}|{foot_max}|{price_min}|{price_max}|{selected_cups}|{cup_m_or_more}|{categories}|{materials}|{sort_by}|{page}|{manufacturers}|{manufacturer_search}|{site_name}"
     cache_key = hashlib.md5(cache_key.encode()).hexdigest()
 
     cached_data = get_cached(cache_key)
@@ -292,10 +293,14 @@ def search():
                 query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ?)'
                 params.extend([f'%{word}%'] * 3)
 
-    # ★ 追加：メーカー名フリーテキスト検索（manufacturer_search）
     if manufacturer_search:
         query += ' AND p.manufacturer LIKE ?'
         params.append(f'%{manufacturer_search}%')
+
+    # ★ 追加：販売サイト名（site_name）による検索
+    if site_name:
+        query += ' AND p.url LIKE ?'
+        params.append(f'%{site_name}%')
 
     if height_min:
         query += ' AND p.height_cm >= ?'
