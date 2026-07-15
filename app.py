@@ -168,23 +168,32 @@ def search():
     '''
     params = []
 
-    # ★ キーワード検索（AND検索＋対象カラム拡張）
+    # ★ キーワード検索（AND検索＋対象カラム拡張）【バグ修正版】
     if keyword:
         words = keyword.strip().split()
         for word in words:
+            # ★ 修正：サブクエリを材質とカップ数で分割し、プレースホルダー数を5つに統一
             subquery = """
-                EXISTS (
-                    SELECT 1 FROM specs s2
-                    WHERE s2.product_id = p.id
-                    AND s2.spec_key IN ('材質', 'カップ数')
-                    AND s2.spec_value LIKE ?
+                (
+                    p.name LIKE ?
+                    OR p.category LIKE ?
+                    OR p.manufacturer LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM specs s2
+                        WHERE s2.product_id = p.id
+                        AND s2.spec_key = '材質'
+                        AND s2.spec_value LIKE ?
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM specs s2
+                        WHERE s2.product_id = p.id
+                        AND s2.spec_key = 'カップ数'
+                        AND s2.spec_value LIKE ?
+                    )
                 )
-                OR p.name LIKE ?
-                OR p.category LIKE ?
-                OR p.manufacturer LIKE ?
             """
             params.extend([f'%{word}%'] * 5)
-            query += f' AND ({subquery})'
+            query += f' AND {subquery}'
 
     if height_min:
         query += ' AND p.height_cm >= ?'
