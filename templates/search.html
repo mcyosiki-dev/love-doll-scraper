@@ -660,7 +660,7 @@
                     </div>
                     {% endfor %}
 
-                    <!-- ★ ページネーション（1ページ目は後方に多く表示） ★ -->
+                    <!-- ★ ページネーション（左右5ページ表示に拡張） ★ -->
                     {% if total > per_page %}
                     {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                     <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
@@ -678,16 +678,17 @@
                             </li>
                             {% endif %}
 
-                            <!-- ページ番号 -->
+                            <!-- ページ番号（前後5ページ：合計11ページ表示） -->
                             {% set page_set = [] %}
                             {% set _ = page_set.append(1) %}
-                            {# 1ページ目の場合は後方に多く表示（+6）、それ以外は+3 #}
+                            {# 1ページ目の場合は後方に多く表示（+6） #}
                             {% if page == 1 %}
                                 {% set end_offset = 6 %}
                             {% else %}
-                                {% set end_offset = 3 %}
+                                {% set end_offset = 5 %}
                             {% endif %}
-                            {% for p in range(page-2, page+end_offset) %}
+                            {# 前後5ページを表示（1ページ目は前方が存在しないため、後方に5ページ） #}
+                            {% for p in range(page-5, page+6) %}
                                 {% if p >= 1 and p <= total_pages and p != 1 and p != total_pages %}
                                     {% set _ = page_set.append(p) %}
                                 {% endif %}
