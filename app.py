@@ -255,12 +255,10 @@ def search():
                 query += f' AND p.id IN ({placeholders})'
                 params.extend(fts_ids)
             else:
-                # ★ FTS5でヒットしなかった場合、LIKE検索にフォールバック（urlも含める）
                 for word in keyword.split():
                     query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ? OR p.url LIKE ?)'
                     params.extend([f'%{word}%'] * 4)
         else:
-            # FTS5が存在しない場合のフォールバック（urlも含める）
             for word in keyword.split():
                 query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ? OR p.url LIKE ?)'
                 params.extend([f'%{word}%'] * 4)
@@ -363,13 +361,15 @@ def search():
     else:
         query += ' ORDER BY p.id'
 
-    count_query = re.sub(r'SELECT.*FROM products p', 'SELECT COUNT(DISTINCT p.id) AS total FROM products p', query)
+    # ★ 修正点：re.DOTALL フラグを追加
+    count_query = re.sub(r'SELECT.*FROM products p', 'SELECT COUNT(DISTINCT p.id) AS total FROM products p', query, flags=re.DOTALL)
     count_params = params[:len(params) - 2] if sort_by in sort_map else params[:]
 
     try:
         c.execute(count_query, count_params)
         total = c.fetchone()[0]
-    except:
+    except Exception as e:
+        print(f"⚠️ カウントクエリエラー: {e}")
         total = 0
 
     query += ' LIMIT ? OFFSET ?'
