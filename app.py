@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+from datetime import timedelta
 import sqlite3
 import re
 import os
@@ -6,6 +7,20 @@ from functools import lru_cache
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# ============================================================
+# ★ セッション設定（ページネーションでセッションが失われる問題の修正）
+# ============================================================
+# セッション有効期限を7日に延長
+app.permanent_session_lifetime = timedelta(days=7)
+
+# セッションCookieの設定
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,  # JavaScriptからのアクセスを防止
+    SESSION_COOKIE_SAMESITE='Lax',  # クロスサイトリクエストでもCookieを送信
+    SESSION_COOKIE_SECURE=os.environ.get('RENDER', 'false').lower() == 'true',  # Render本番でのみSecureを有効
+    SESSION_COOKIE_PATH='/',
+)
 
 CUP_ORDER = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 PER_PAGE = 30
@@ -103,6 +118,8 @@ def age_verify():
     answer = request.form.get('age_confirm')
     if answer == 'yes':
         session['age_verified'] = True
+        # ★ セッションを永続化（有効期限を延長）
+        session.permanent = True
         return redirect(url_for('search'))
     else:
         return render_template('age_denied.html')
@@ -234,12 +251,10 @@ def search():
 
     if selected_cups:
         placeholders = ','.join(['?'] * len(selected_cups))
-        # ★ cup エイリアスを使用
         having_conditions.append(f'cup IN ({placeholders})')
         params.extend(selected_cups)
 
     if cup_m_or_more:
-        # ★ cup エイリアスを使用
         having_conditions.append('''
             CASE
                 WHEN cup = 'AA' THEN 0
@@ -262,14 +277,12 @@ def search():
 
     if materials:
         placeholders = ','.join(['?'] * len(materials))
-        # ★ material エイリアスを使用
         having_conditions.append(f'material IN ({placeholders})')
         params.extend(materials)
 
     if having_conditions:
         query += ' HAVING ' + ' AND '.join(having_conditions)
 
-    # ★ cup エイリアスを使用したソート
     cup_order_case = '''
         CASE
             WHEN cup = 'AA' THEN 0
@@ -310,14 +323,6 @@ def search():
 
     query += ' LIMIT ? OFFSET ?'
     params.extend([PER_PAGE, offset])
-
-    # ★ デバッグ出力（必要に応じてコメントアウト可）
-    print("=" * 60)
-    print("=== DEBUG: SQL ===")
-    print(query)
-    print("=== DEBUG: params ===")
-    print(params)
-    print("=" * 60)
 
     c.execute(query, params)
     results = c.fetchall()
