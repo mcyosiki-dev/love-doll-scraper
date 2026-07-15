@@ -63,13 +63,26 @@
     {% endif %}
 
     <style>
+        /* ★ 全体レイアウト（フッター余白を常に確保） ★ */
         * { border-radius: 0 !important; }
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
         body {
             background: linear-gradient(135deg, #e0f2fe 0%, #b8d4e8 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
-            padding-bottom: 35px;
+            padding-bottom: 0;
             font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container-fluid {
+            flex: 1 0 auto;
+            display: flex;
+            flex-direction: column;
         }
         .sidebar {
             background: rgba(255, 255, 255, 0.92);
@@ -381,13 +394,25 @@
             text-decoration: underline;
         }
 
+        /* ★ 検索結果エリア（フッターを下部に押し出す） ★ */
         .search-results-container {
-            min-height: 70vh;
+            flex: 1 0 auto;
             display: flex;
             flex-direction: column;
+            min-height: 60vh;
         }
         .search-results-container .result-list {
             flex: 1;
+        }
+        /* ★ フッターを縮まないように固定 ★ */
+        .footer-wrapper {
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+        /* フッター内の余白調整 */
+        footer {
+            flex-shrink: 0;
+            padding: 10px 0;
         }
 
         @media (max-width: 1200px) {
@@ -447,10 +472,13 @@
             <div class="col-lg-2 col-md-3">
                 <div class="sidebar">
                     <h5><i class="bi bi-sliders2 me-1"></i>検索</h5>
-                    <form method="GET" action="{{ url_for('search') }}">
-                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>検索</button>
+                    <!-- ★ 修正：明示的に id を付与 ★ -->
+                    <form method="GET" action="{{ url_for('search') }}" id="mainSearchForm" onsubmit="return true;">
+                        <!-- ★ 修正：ボタンに form 属性を指定 ★ -->
+                        <button type="submit" form="mainSearchForm" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>検索</button>
                         <div class="filter-group">
                             <label for="keyword" class="form-label">キーワード</label>
+                            <!-- ★ name="keyword" は既に正しい ★ -->
                             <input type="text" class="form-control form-control-sm" id="keyword" name="keyword" value="{{ keyword }}" placeholder="商品名・メーカー名・販売サイト名">
                         </div>
                         <div class="filter-group">
@@ -603,6 +631,7 @@
                     </div>
                 </div>
 
+                <!-- ★ 修正：このフォームはソート用。id="searchForm" はそのまま -->
                 <form id="searchForm" method="GET" action="{{ url_for('search') }}" style="display:none;">
                     {% for key, value in request.args.items() %}
                         {% if key != 'sort_by' %}
@@ -611,7 +640,7 @@
                     {% endfor %}
                 </form>
 
-                <!-- ★ 現在の検索条件表示（site_name / manufacturer_search は削除済み） ★ -->
+                <!-- 現在の検索条件表示 -->
                 <div class="current-filters">
                     <span><i class="bi bi-funnel"></i> 現在の条件：</span>
                     {% set has_filter = false %}
