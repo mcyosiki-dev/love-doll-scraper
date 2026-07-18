@@ -386,13 +386,13 @@
             text-decoration: underline;
         }
 
+        /* ★ 検索結果エリア（フッターが常に表示されるよう修正） ★ */
         .search-results-container {
             flex: 1 0 auto;
             display: flex;
             flex-direction: column;
             min-height: 60vh;
-            /* ★ ページネーションと広告の重なり対策：200pxに増量 ★ */
-            padding-bottom: 200px;
+            /* ★ padding-bottom を削除（フッターは通常フローに戻したため不要） ★ */
         }
         .search-results-container .result-list {
             flex: 1;
@@ -401,6 +401,7 @@
             flex-shrink: 0;
             margin-top: auto;
         }
+        /* ★ フッターは通常フローに戻すため、特別なスタイルは不要 ★ */
         footer {
             flex-shrink: 0;
             padding: 10px 0;
@@ -469,7 +470,6 @@
                             <label for="keyword" class="form-label">キーワード</label>
                             <input type="text" class="form-control form-control-sm" id="keyword" name="keyword" value="{{ keyword }}" placeholder="商品名・メーカー名・販売サイト名">
                         </div>
-                        <!-- ★ メーカーフィルタをテキスト入力（部分一致）に変更 ★ -->
                         <div class="filter-group">
                             <label for="manufacturer_text" class="form-label">メーカー名（部分一致）</label>
                             <input type="text" class="form-control form-control-sm" id="manufacturer_text" name="manufacturer" value="{{ request.args.get('manufacturer', '') }}" placeholder="例：WMDOLL, Irontech, オリエント工業">
@@ -595,7 +595,6 @@
 
             <div class="col-lg-10 col-md-9 search-results-container">
                 <div class="result-header">
-                    <!-- ★ 「全 ○○ 件」を常に表示（totalが0でも表示） ★ -->
                     <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件 / 全 {{ total }} 件</span>
                     <div class="sort-controls">
                         <label for="sortSelect"><i class="bi bi-arrow-up-down me-1"></i>並び替え</label>
@@ -914,14 +913,17 @@
     </div>
     {% include 'footer.html' %}
 
+    <!-- ★ Intersection Observer：ページネーション表示時に広告を非表示（フッター自体は非表示にしない） ★ -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const pagination = document.querySelector('.pagination');
-        const footerAd = document.querySelector('#ad-slot-bottom');
-        if (pagination && footerAd) {
+        const adSlot = document.querySelector('#ad-slot-bottom');
+        // ★ 監視対象を #ad-slot-bottom（広告）のみに変更。footer全体は非表示にしない ★
+        if (pagination && adSlot) {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    footerAd.style.display = entry.isIntersecting ? 'none' : 'block';
+                    // ページネーションが表示されたら広告を非表示、それ以外は表示
+                    adSlot.style.display = entry.isIntersecting ? 'none' : 'block';
                 });
             }, { threshold: 0.1 });
             observer.observe(pagination);
