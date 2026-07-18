@@ -143,10 +143,6 @@ def search():
         return redirect(url_for('top'))
 
     keyword = request.args.get('keyword', '').strip()
-    # ★★★ デバッグ出力追加 ★★★
-    print(f"DEBUG: keyword = '{keyword}'")
-    print(f"DEBUG: request.args = {dict(request.args)}")
-
     height_min = request.args.get('height_min', '')
     height_max = request.args.get('height_max', '')
     weight_min = request.args.get('weight_min', '')
@@ -206,7 +202,9 @@ def search():
     conn = get_db_connection()
     c = conn.cursor()
 
-    query = '''
+    # ========== ★★★ 修正：サブクエリ方式で確実にCOUNTを取得 ★★★ ==========
+    # 1. ベースクエリ（WHERE/GROUP BY/HAVING を含む、ORDER BY/LIMIT は含まない）
+    base_query = '''
         SELECT
             p.id, p.name, p.price, p.url, p.category,
             p.height_cm AS height,
@@ -229,6 +227,7 @@ def search():
     '''
     params = []
 
+    # 2. WHERE句の構築
     if keyword:
         c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products_fts'")
         if c.fetchone():
@@ -237,62 +236,64 @@ def search():
             fts_ids = [row[0] for row in c.fetchall()]
             if fts_ids:
                 placeholders = ','.join(['?'] * len(fts_ids))
-                query += f' AND p.id IN ({placeholders})'
+                base_query += f' AND p.id IN ({placeholders})'
                 params.extend(fts_ids)
             else:
                 for word in keyword.split():
-                    query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ? OR p.url LIKE ?)'
+                    base_query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ? OR p.url LIKE ?)'
                     params.extend([f'%{word}%'] * 4)
         else:
             for word in keyword.split():
-                query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ? OR p.url LIKE ?)'
+                base_query += ' AND (p.name LIKE ? OR p.category LIKE ? OR p.manufacturer LIKE ? OR p.url LIKE ?)'
                 params.extend([f'%{word}%'] * 4)
 
     if manufacturer_search:
-        query += ' AND p.manufacturer LIKE ?'
+        base_query += ' AND p.manufacturer LIKE ?'
         params.append(f'%{manufacturer_search}%')
 
     if site_name:
-        query += ' AND p.url LIKE ?'
+        base_query += ' AND p.url LIKE ?'
         params.append(f'%{site_name}%')
 
     if height_min:
-        query += ' AND p.height_cm >= ?'
+        base_query += ' AND p.height_cm >= ?'
         params.append(float(height_min))
     if height_max:
-        query += ' AND p.height_cm <= ?'
+        base_query += ' AND p.height_cm <= ?'
         params.append(float(height_max))
     if weight_min:
-        query += ' AND p.weight_kg >= ?'
+        base_query += ' AND p.weight_kg >= ?'
         params.append(float(weight_min))
     if weight_max:
-        query += ' AND p.weight_kg <= ?'
+        base_query += ' AND p.weight_kg <= ?'
         params.append(float(weight_max))
     if foot_min:
-        query += ' AND p.foot_cm >= ?'
+        base_query += ' AND p.foot_cm >= ?'
         params.append(float(foot_min))
     if foot_max:
-        query += ' AND p.foot_cm <= ?'
+        base_query += ' AND p.foot_cm <= ?'
         params.append(float(foot_max))
     if price_min:
-        query += ' AND p.price_int >= ?'
+        base_query += ' AND p.price_int >= ?'
         params.append(int(price_min))
     if price_max:
-        query += ' AND p.price_int <= ?'
+        base_query += ' AND p.price_int <= ?'
         params.append(int(price_max))
     if categories:
         cat_list = categories.split(',')
         placeholders = ','.join(['?'] * len(cat_list))
-        query += f' AND p.category IN ({placeholders})'
+        base_query += f' AND p.category IN ({placeholders})'
         params.extend(cat_list)
     if manufacturers:
         mfg_list = manufacturers.split(',')
         placeholders = ','.join(['?'] * len(mfg_list))
-        query += f' AND p.manufacturer IN ({placeholders})'
+        base_query += f' AND p.manufacturer IN ({placeholders})'
         params.extend(mfg_list)
 
-    query += ' GROUP BY p.id'
+    # 3. GROUP BY
+    base_query += ' GROUP BY p.id'
 
+    # 4. HAVING句
     having_conditions = []
     if selected_cups:
         cup_list = selected_cups.split(',')
@@ -326,8 +327,29 @@ def search():
         params.extend(mat_list)
 
     if having_conditions:
-        query += ' HAVING ' + ' AND '.join(having_conditions)
+        base_query += ' HAVING ' + ' AND '.join(having_conditions)
 
+    # ========== ★★★ ここがポイント：COUNT用とメイン用でクエリを分ける ★★★ ==========
+    # 5. COUNTクエリ（base_queryをサブクエリとしてラップ）
+    # base_query には ORDER BY が含まれていないので、そのままサブクエリにできる
+    count_query = f"SELECT COUNT(*) AS total FROM ({base_query}) AS sub"
+    count_params = params[:]  # params をコピー（ORDER BY/LIMIT はまだない）
+
+    print("=" * 60)
+    print("=== COUNT QUERY (サブクエリ方式) ===")
+    print(count_query)
+    print("=== COUNT PARAMS ===")
+    print(count_params)
+    print("=" * 60)
+
+    try:
+        c.execute(count_query, count_params)
+        total = c.fetchone()[0]
+    except Exception as e:
+        print(f"⚠️ カウントクエリエラー: {e}")
+        total = 0
+
+    # 6. メインクエリ（ORDER BY + LIMIT/OFFSET を追加）
     sort_map = {
         'price_asc': ('p.price_int ASC', 'price'),
         'price_desc': ('p.price_int DESC', 'price'),
@@ -342,45 +364,14 @@ def search():
     }
     if sort_by in sort_map:
         order_clause, _ = sort_map[sort_by]
-        query += f' ORDER BY {order_clause}'
+        main_query = base_query + f' ORDER BY {order_clause}'
     else:
-        query += ' ORDER BY p.id'
+        main_query = base_query + ' ORDER BY p.id'
 
-    # ★★★ 確実な total クエリ生成 ★★★
-    from_pos = query.upper().find('FROM PRODUCTS P')
-    if from_pos != -1:
-        count_query = 'SELECT COUNT(DISTINCT p.id) AS total ' + query[from_pos:]
-    else:
-        from_pos2 = query.upper().find('FROM')
-        if from_pos2 != -1:
-            count_query = 'SELECT COUNT(DISTINCT p.id) AS total ' + query[from_pos2:]
-        else:
-            count_query = 'SELECT COUNT(DISTINCT p.id) AS total FROM products p WHERE 1=0'
+    main_query += ' LIMIT ? OFFSET ?'
+    main_params = params + [PER_PAGE, offset]
 
-    count_query = re.sub(r'\s+ORDER\s+BY\s+.*?(?=\s+LIMIT|$)', '', count_query, flags=re.IGNORECASE)
-    count_query = re.sub(r'\s+LIMIT\s+\?\s+OFFSET\s+\?', '', count_query, flags=re.IGNORECASE)
-    count_params = params[:-2] if len(params) >= 2 else params[:]
-
-    print("=" * 60)
-    print("=== count_query (修正後) ===")
-    print(count_query)
-    print("=== count_params (修正後) ===")
-    print(count_params)
-    print("=== params (全文) ===")
-    print(params)
-    print("=" * 60)
-
-    try:
-        c.execute(count_query, count_params)
-        total = c.fetchone()[0]
-    except Exception as e:
-        print(f"⚠️ カウントクエリエラー: {e}")
-        total = 0
-
-    query += ' LIMIT ? OFFSET ?'
-    params.extend([PER_PAGE, offset])
-
-    c.execute(query, params)
+    c.execute(main_query, main_params)
     results = c.fetchall()
     conn.close()
 
