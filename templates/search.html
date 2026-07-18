@@ -67,7 +67,8 @@
             background: linear-gradient(135deg, #e0f2fe 0%, #b8d4e8 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
-            padding-bottom: 0;
+            /* ★ フッター固定表示に対応：フッター高さ分のパディング ★ */
+            padding-bottom: 120px;
             font-size: 16px;
             display: flex;
             flex-direction: column;
@@ -386,13 +387,11 @@
             text-decoration: underline;
         }
 
-        /* ★ 検索結果エリア（フッターが常に表示されるよう修正） ★ */
         .search-results-container {
             flex: 1 0 auto;
             display: flex;
             flex-direction: column;
             min-height: 60vh;
-            /* ★ padding-bottom を削除（フッターは通常フローに戻したため不要） ★ */
         }
         .search-results-container .result-list {
             flex: 1;
@@ -401,7 +400,6 @@
             flex-shrink: 0;
             margin-top: auto;
         }
-        /* ★ フッターは通常フローに戻すため、特別なスタイルは不要 ★ */
         footer {
             flex-shrink: 0;
             padding: 10px 0;
@@ -913,16 +911,13 @@
     </div>
     {% include 'footer.html' %}
 
-    <!-- ★ Intersection Observer：ページネーション表示時に広告を非表示（フッター自体は非表示にしない） ★ -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const pagination = document.querySelector('.pagination');
         const adSlot = document.querySelector('#ad-slot-bottom');
-        // ★ 監視対象を #ad-slot-bottom（広告）のみに変更。footer全体は非表示にしない ★
         if (pagination && adSlot) {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    // ページネーションが表示されたら広告を非表示、それ以外は表示
                     adSlot.style.display = entry.isIntersecting ? 'none' : 'block';
                 });
             }, { threshold: 0.1 });
