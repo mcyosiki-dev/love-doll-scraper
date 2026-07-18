@@ -5,7 +5,6 @@
     <meta name="google-site-verification" content="Doj7JaRzv0jiYE46eKZkmn3YXRmV0phAVqQ2KYxNaOY" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if keyword %}ラブドール検索 - {{ keyword }}{% else %}ラブドール検索 - 全国のラブドールを一括比較{% endif %}</title>
-    <!-- robots制御（条件付きインデックス） -->
     {% if not request.args %}
     <meta name="robots" content="index, follow">
     {% else %}
@@ -13,12 +12,10 @@
     {% endif %}
     <meta name="description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格・メーカーで絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトから、WM DOLL・Irontech・オリエント工業など主要メーカーの商品をスペックで絞り込み。{% endif %}">
     <link rel="canonical" href="{{ request.url }}">
-    <!-- ファビコン -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
-    <!-- OGP / SNS -->
     <meta property="og:title" content="{% if keyword %}ラブドール検索 - {{ keyword }}{% else %}ラブドール検索 - 全国のラブドールを一括比較{% endif %}">
     <meta property="og:description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格・メーカーで絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトに対応。{% endif %}">
     <meta property="og:url" content="{{ request.url }}">
@@ -28,11 +25,9 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="{% if keyword %}ラブドール検索 - {{ keyword }}{% else %}ラブドール検索 - 全国のラブドールを一括比較{% endif %}">
     <meta name="twitter:description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格・メーカーで絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトに対応。{% endif %}">
-    <!-- Bootstrap / Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
-    <!-- 構造化データ（JSON-LD） -->
     {% if results %}
     <script type="application/ld+json">
     {
@@ -63,7 +58,6 @@
     {% endif %}
 
     <style>
-        /* ★ 全体レイアウト（フッター余白を常に確保） ★ */
         * { border-radius: 0 !important; }
         html, body {
             height: 100%;
@@ -336,7 +330,6 @@
             max-width: 100%;
         }
 
-        /* ページネーション用スタイル */
         .pagination .page-link {
             color: #1a4b6d;
             background: transparent;
@@ -351,7 +344,6 @@
             background: #e0f2fe;
         }
 
-        /* 現在の検索条件表示用スタイル */
         .current-filters {
             display: flex;
             flex-wrap: wrap;
@@ -394,24 +386,21 @@
             text-decoration: underline;
         }
 
-        /* ★ 検索結果エリア（フッターを下部に押し出す） ★ */
         .search-results-container {
             flex: 1 0 auto;
             display: flex;
             flex-direction: column;
             min-height: 60vh;
-            /* ★ ページネーションと広告の重なり対策：広告高さ分のパディング追加 ★ */
-            padding-bottom: 120px;
+            /* ★ ページネーションと広告の重なり対策：200pxに増量 ★ */
+            padding-bottom: 200px;
         }
         .search-results-container .result-list {
             flex: 1;
         }
-        /* ★ フッターを縮まないように固定 ★ */
         .footer-wrapper {
             flex-shrink: 0;
             margin-top: auto;
         }
-        /* フッター内の余白調整 */
         footer {
             flex-shrink: 0;
             padding: 10px 0;
@@ -474,14 +463,17 @@
             <div class="col-lg-2 col-md-3">
                 <div class="sidebar">
                     <h5><i class="bi bi-sliders2 me-1"></i>検索</h5>
-                    <!-- ★ 修正：明示的に id を付与 ★ -->
                     <form method="GET" action="{{ url_for('search') }}" id="mainSearchForm" onsubmit="return true;">
-                        <!-- ★ 修正：ボタンに form 属性を指定 ★ -->
                         <button type="submit" form="mainSearchForm" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>検索</button>
                         <div class="filter-group">
                             <label for="keyword" class="form-label">キーワード</label>
-                            <!-- ★ name="keyword" は既に正しい ★ -->
                             <input type="text" class="form-control form-control-sm" id="keyword" name="keyword" value="{{ keyword }}" placeholder="商品名・メーカー名・販売サイト名">
+                        </div>
+                        <!-- ★ メーカーフィルタをテキスト入力（部分一致）に変更 ★ -->
+                        <div class="filter-group">
+                            <label for="manufacturer_text" class="form-label">メーカー名（部分一致）</label>
+                            <input type="text" class="form-control form-control-sm" id="manufacturer_text" name="manufacturer" value="{{ request.args.get('manufacturer', '') }}" placeholder="例：WMDOLL, Irontech, オリエント工業">
+                            <small class="text-muted" style="font-size: 0.7rem;">メーカー名の一部を入力して絞り込み</small>
                         </div>
                         <div class="filter-group">
                             <label>身長 (cm)</label>
@@ -583,23 +575,6 @@
                                 {% endfor %}
                             </div>
                         </div>
-                        <!-- ★ メーカーフィルター（頭文字ドロップダウン）修正済み ★ -->
-                        <div class="filter-group">
-                            <label class="form-label" for="manufacturerGroup">メーカー（頭文字）</label>
-                            <!-- ★ フォールバック警告表示（機能修正中であることを明示） ★ -->
-                            <div class="alert alert-warning alert-sm" role="alert" style="font-size: 0.75rem; padding: 4px 8px; margin-bottom: 6px;">
-                                <i class="bi bi-exclamation-triangle"></i>
-                                現在この機能は修正中です。代わりにキーワード検索でメーカー名を入力してください。
-                            </div>
-                            <select class="form-select form-select-sm" id="manufacturerGroup" name="manufacturer" onchange="this.form.submit()">
-                                <option value="">すべて</option>
-                                <option value="A-F" {% if request.args.get('manufacturer') == 'A-F' %}selected{% endif %}>A〜F</option>
-                                <option value="G-N" {% if request.args.get('manufacturer') == 'G-N' %}selected{% endif %}>G〜N</option>
-                                <option value="O-S" {% if request.args.get('manufacturer') == 'O-S' %}selected{% endif %}>O〜S</option>
-                                <option value="T-Z" {% if request.args.get('manufacturer') == 'T-Z' %}selected{% endif %}>T〜Z</option>
-                                <option value="other" {% if request.args.get('manufacturer') == 'other' %}selected{% endif %}>その他（数字・漢字）</option>
-                            </select>
-                        </div>
                         <div class="filter-group">
                             <label class="form-label">材質</label>
                             <div class="checkbox-group">
@@ -620,8 +595,8 @@
 
             <div class="col-lg-10 col-md-9 search-results-container">
                 <div class="result-header">
-                    <!-- ★ totalカウント1問題暫定対応：total=1の場合は「全 ○○ 件」を非表示 ★ -->
-                    <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件{% if total != 1 %} / 全 {{ total }} 件{% endif %}</span>
+                    <!-- ★ 「全 ○○ 件」を常に表示（totalが0でも表示） ★ -->
+                    <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件 / 全 {{ total }} 件</span>
                     <div class="sort-controls">
                         <label for="sortSelect"><i class="bi bi-arrow-up-down me-1"></i>並び替え</label>
                         <select id="sortSelect" onchange="document.getElementById('searchForm').submit()" name="sort_by" form="searchForm">
@@ -639,7 +614,6 @@
                     </div>
                 </div>
 
-                <!-- ★ このフォームはソート用。id="searchForm" はそのまま -->
                 <form id="searchForm" method="GET" action="{{ url_for('search') }}" style="display:none;">
                     {% for key, value in request.args.items() %}
                         {% if key != 'sort_by' %}
@@ -648,7 +622,6 @@
                     {% endfor %}
                 </form>
 
-                <!-- 現在の検索条件表示 -->
                 <div class="current-filters">
                     <span><i class="bi bi-funnel"></i> 現在の条件：</span>
                     {% set has_filter = false %}
@@ -665,7 +638,7 @@
                         {% set filter_params = request.args.to_dict() %}
                         {% set _ = filter_params.pop('manufacturer', None) %}
                         <span class="filter-badge">
-                            <i class="bi bi-tag"></i> 頭文字: {{ request.args.get('manufacturer') }}
+                            <i class="bi bi-tag"></i> メーカー: {{ request.args.get('manufacturer') }}
                             <a href="{{ url_for('search', **filter_params) }}" class="remove-filter">&times;</a>
                         </span>
                         {% set has_filter = true %}
@@ -845,12 +818,10 @@
                         </div>
                         {% endfor %}
 
-                        <!-- ★ ページネーション（左右5ページ表示） ★ -->
                         {% if total > per_page %}
                         {% set total_pages = (total // per_page) + (1 if total % per_page > 0 else 0) %}
                         <nav aria-label="ページナビゲーション" style="margin-bottom: 100px;">
                             <ul class="pagination justify-content-center">
-                                <!-- 前へ -->
                                 {% if page > 1 %}
                                 <li class="page-item">
                                     {% set query_params = request.args.to_dict() %}
@@ -863,16 +834,13 @@
                                 </li>
                                 {% endif %}
 
-                                <!-- ページ番号（前後5ページ：合計11ページ表示） -->
                                 {% set page_set = [] %}
                                 {% set _ = page_set.append(1) %}
-                                {# 1ページ目の場合は後方に多く表示（+6） #}
                                 {% if page == 1 %}
                                     {% set end_offset = 6 %}
                                 {% else %}
                                     {% set end_offset = 5 %}
                                 {% endif %}
-                                {# 前後5ページを表示（1ページ目は前方が存在しないため、後方に5ページ） #}
                                 {% for p in range(page-5, page+6) %}
                                     {% if p >= 1 and p <= total_pages and p != 1 and p != total_pages %}
                                         {% set _ = page_set.append(p) %}
@@ -892,7 +860,6 @@
                                     {% endif %}
                                 {% endfor %}
 
-                                {# loop.previtem でスコープ問題回避 #}
                                 {% for p in unique_pages %}
                                     {% if loop.previtem and p - loop.previtem > 1 %}
                                         <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -908,7 +875,6 @@
                                     {% endif %}
                                 {% endfor %}
 
-                                <!-- 次へ -->
                                 {% if page < total_pages %}
                                 <li class="page-item">
                                     {% set query_params = request.args.to_dict() %}
@@ -948,7 +914,6 @@
     </div>
     {% include 'footer.html' %}
 
-    <!-- ★ Intersection Observer：ページネーション表示時にフッター広告を非表示 ★ -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const pagination = document.querySelector('.pagination');
@@ -956,7 +921,6 @@
         if (pagination && footerAd) {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    // ページネーションが画面内に入ったら広告を非表示、出たら再表示
                     footerAd.style.display = entry.isIntersecting ? 'none' : 'block';
                 });
             }, { threshold: 0.1 });
