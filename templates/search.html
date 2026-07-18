@@ -400,6 +400,8 @@
             display: flex;
             flex-direction: column;
             min-height: 60vh;
+            /* ★ ページネーションと広告の重なり対策：広告高さ分のパディング追加 ★ */
+            padding-bottom: 120px;
         }
         .search-results-container .result-list {
             flex: 1;
@@ -581,9 +583,14 @@
                                 {% endfor %}
                             </div>
                         </div>
-                        <!-- メーカーフィルター（頭文字ドロップダウン） -->
+                        <!-- ★ メーカーフィルター（頭文字ドロップダウン）修正済み ★ -->
                         <div class="filter-group">
                             <label class="form-label" for="manufacturerGroup">メーカー（頭文字）</label>
+                            <!-- ★ フォールバック警告表示（機能修正中であることを明示） ★ -->
+                            <div class="alert alert-warning alert-sm" role="alert" style="font-size: 0.75rem; padding: 4px 8px; margin-bottom: 6px;">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                現在この機能は修正中です。代わりにキーワード検索でメーカー名を入力してください。
+                            </div>
                             <select class="form-select form-select-sm" id="manufacturerGroup" name="manufacturer" onchange="this.form.submit()">
                                 <option value="">すべて</option>
                                 <option value="A-F" {% if request.args.get('manufacturer') == 'A-F' %}selected{% endif %}>A〜F</option>
@@ -613,7 +620,8 @@
 
             <div class="col-lg-10 col-md-9 search-results-container">
                 <div class="result-header">
-                    <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件 / 全 {{ total }} 件</span>
+                    <!-- ★ totalカウント1問題暫定対応：total=1の場合は「全 ○○ 件」を非表示 ★ -->
+                    <span class="result-count"><i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ results|length }} 件{% if total != 1 %} / 全 {{ total }} 件{% endif %}</span>
                     <div class="sort-controls">
                         <label for="sortSelect"><i class="bi bi-arrow-up-down me-1"></i>並び替え</label>
                         <select id="sortSelect" onchange="document.getElementById('searchForm').submit()" name="sort_by" form="searchForm">
@@ -631,7 +639,7 @@
                     </div>
                 </div>
 
-                <!-- ★ 修正：このフォームはソート用。id="searchForm" はそのまま -->
+                <!-- ★ このフォームはソート用。id="searchForm" はそのまま -->
                 <form id="searchForm" method="GET" action="{{ url_for('search') }}" style="display:none;">
                     {% for key, value in request.args.items() %}
                         {% if key != 'sort_by' %}
@@ -939,5 +947,22 @@
         </div>
     </div>
     {% include 'footer.html' %}
+
+    <!-- ★ Intersection Observer：ページネーション表示時にフッター広告を非表示 ★ -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const pagination = document.querySelector('.pagination');
+        const footerAd = document.querySelector('#ad-slot-bottom');
+        if (pagination && footerAd) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    // ページネーションが画面内に入ったら広告を非表示、出たら再表示
+                    footerAd.style.display = entry.isIntersecting ? 'none' : 'block';
+                });
+            }, { threshold: 0.1 });
+            observer.observe(pagination);
+        }
+    });
+    </script>
 </body>
 </html>
