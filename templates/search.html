@@ -472,8 +472,6 @@
                             <small class="text-muted" style="font-size: 0.7rem;">メーカー名や販売サイト名もここで検索できます</small>
                         </div>
 
-                        <!-- ★ メーカー専用入力欄は削除しました（キーワードに統合） ★ -->
-
                         <div class="filter-group">
                             <label>身長 (cm)</label>
                             <div class="slider-row">
@@ -912,19 +910,6 @@
     </div>
     {% include 'footer.html' %}
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const pagination = document.querySelector('.pagination');
-        const adSlot = document.querySelector('#ad-slot-bottom');
-        if (pagination && adSlot) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    adSlot.style.display = entry.isIntersecting ? 'none' : 'block';
-                });
-            }, { threshold: 0.1 });
-            observer.observe(pagination);
-        }
-    });
-    </script>
+    <!-- ★ Intersection Observer を完全に削除しました（広告を非表示にしない） ★ -->
 </body>
 </html>
