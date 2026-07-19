@@ -10,21 +10,21 @@
     {% else %}
     <meta name="robots" content="noindex, follow">
     {% endif %}
-    <meta name="description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格・メーカーで絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトから、WM DOLL・Irontech・オリエント工業など主要メーカーの商品をスペックで絞り込み。{% endif %}">
+    <meta name="description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格で絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトから、WM DOLL・Irontech・オリエント工業など主要メーカーの商品をスペックで絞り込み。{% endif %}">
     <link rel="canonical" href="{{ request.url }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <meta property="og:title" content="{% if keyword %}ラブドール検索 - {{ keyword }}{% else %}ラブドール検索 - 全国のラブドールを一括比較{% endif %}">
-    <meta property="og:description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格・メーカーで絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトに対応。{% endif %}">
+    <meta property="og:description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格で絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。{% endif %}">
     <meta property="og:url" content="{{ request.url }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="ラブドール検索">
     <meta property="og:image" content="{{ url_for('static', filename='ogp.png', _external=True) }}">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="{% if keyword %}ラブドール検索 - {{ keyword }}{% else %}ラブドール検索 - 全国のラブドールを一括比較{% endif %}">
-    <meta name="twitter:description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格・メーカーで絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。YourDoll・快楽園・AngelDollなど14の販売サイトに対応。{% endif %}">
+    <meta name="twitter:description" content="{% if keyword %}{{ keyword }} のラブドール検索結果です。身長・体重・バスト・価格で絞り込めます。{% else %}ラブドール・オナホ・トルソーを一括検索・比較。{% endif %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
@@ -67,8 +67,8 @@
             background: linear-gradient(135deg, #e0f2fe 0%, #b8d4e8 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
-            /* ★ フッター固定表示に対応：フッター高さ分のパディング ★ */
-            padding-bottom: 120px;
+            /* ★ フッター固定表示に対応：フッター高さ分のパディングを確保 ★ */
+            padding-bottom: 150px;
             font-size: 16px;
             display: flex;
             flex-direction: column;
@@ -464,15 +464,16 @@
                     <h5><i class="bi bi-sliders2 me-1"></i>検索</h5>
                     <form method="GET" action="{{ url_for('search') }}" id="mainSearchForm" onsubmit="return true;">
                         <button type="submit" form="mainSearchForm" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>検索</button>
+                        
+                        <!-- ★ キーワード検索窓を１つに統合（メーカー・ECサイト名もここで検索可能） ★ -->
                         <div class="filter-group">
                             <label for="keyword" class="form-label">キーワード</label>
                             <input type="text" class="form-control form-control-sm" id="keyword" name="keyword" value="{{ keyword }}" placeholder="商品名・メーカー名・販売サイト名">
+                            <small class="text-muted" style="font-size: 0.7rem;">メーカー名や販売サイト名もここで検索できます</small>
                         </div>
-                        <div class="filter-group">
-                            <label for="manufacturer_text" class="form-label">メーカー名（部分一致）</label>
-                            <input type="text" class="form-control form-control-sm" id="manufacturer_text" name="manufacturer" value="{{ request.args.get('manufacturer', '') }}" placeholder="例：WMDOLL, Irontech, オリエント工業">
-                            <small class="text-muted" style="font-size: 0.7rem;">メーカー名の一部を入力して絞り込み</small>
-                        </div>
+
+                        <!-- ★ メーカー専用入力欄は削除しました（キーワードに統合） ★ -->
+
                         <div class="filter-group">
                             <label>身長 (cm)</label>
                             <div class="slider-row">
