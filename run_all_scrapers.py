@@ -43,7 +43,7 @@ FAST_WAIT_MS = 250
 
 
 # ============================================================
-# SITE_CONFIGS（全サイトの設定）
+# SITE_CONFIGS（全サイト）
 # ============================================================
 SITE_CONFIGS = {
     "dolltime": {
@@ -201,6 +201,45 @@ SITE_CONFIGS = {
         "age_selectors": []
     },
 }
+
+
+# ============================================================
+# ★ 材質抽出ロジック
+# ============================================================
+def extract_material_from_text(text):
+    if not text:
+        return None
+    keywords = [
+        r'シリコン', r'TPE', r'PVC', r'STPE', r'Silicon',
+        r'ビニール', r'シリコーン', r'シリコン\+TPE', r'シリコン＆TPE',
+        r'シリコン/TPE', r'シリコン製', r'フルシリコン', r'TPE製',
+        r'ソフビ', r'エラストマー'
+    ]
+    for pattern in keywords:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            result = match.group(0)
+            result = re.sub(r'製$|素材$|タイプ$|材質$', '', result)
+            return result.strip()
+    if len(text) > 30:
+        return None
+    return text.strip()
+
+
+# ============================================================
+# ★ URLバリデーション関数
+# ============================================================
+def is_valid_url(url):
+    if not url or not isinstance(url, str):
+        return False
+    url = url.strip()
+    if url.startswith('#') or url.startswith('javascript:'):
+        return False
+    if re.match(r'^https?://', url, re.IGNORECASE):
+        return True
+    if url.startswith('/') or url.startswith('./') or url.startswith('../'):
+        return True
+    return False
 
 
 # ============================================================
@@ -381,22 +420,28 @@ def log_error(url, msg):
 
 def extract_price(text):
     if not text:
-        return "取得できず"
+        return None
+    if re.search(r'^0\s*(円|$)', text):
+        return None
     discount_match = re.search(r'(\d+)\s*[%％]\s*(?:OFF|オフ|割引)', text, re.IGNORECASE)
     discount_rate = None
     if discount_match:
         discount_rate = int(discount_match.group(1)) / 100
     numbers = re.findall(r'([\d,]+)', text)
     if not numbers:
-        return "取得できず"
+        return None
     int_numbers = [int(n.replace(',', '')) for n in numbers]
-    if discount_rate is not None and len(int_numbers) >= 1:
-        final_price = int_numbers[-1]
-        if 0 < discount_rate < 1:
-            original_price = final_price / (1 - discount_rate)
-            return str(int(round(original_price)))
-        return str(final_price)
-    return str(int_numbers[0])
+    int_numbers = [n for n in int_numbers if n > 0]
+    if not int_numbers:
+        return None
+    if len(int_numbers) >= 2:
+        if discount_rate is not None and 0 < discount_rate < 1:
+            return str(int(round(int_numbers[0] / (1 - discount_rate))))
+        return str(min(int_numbers))
+    price = int_numbers[0]
+    if discount_rate is not None and 0 < discount_rate < 1:
+        return str(int(round(price / (1 - discount_rate))))
+    return str(price)
 
 
 def extract_height_cup_from_title(title):
@@ -421,6 +466,31 @@ def extract_brand_from_name(product_name):
 
 def extract_metadata(soup, url, product_name):
     metadata = {}
+
+    if 'dachiwife.com' in url:
+        brand_map = {
+            'Art-doll': 'Art-Doll',
+            'Art Doll': 'Art-Doll',
+            'Strawberry Garden': 'Strawberry Garden',
+            'Game Lady': 'Game Lady',
+            'Irontech': 'Irontech Doll',
+            'WM': 'WM Doll',
+            'Aotume': 'Aotume Doll',
+            'Sino': 'Sino Doll',
+            'SHEDOLL': 'SHEDOLL',
+            'FUDOLL': 'FUDOLL',
+            'Real Lady': 'Real Lady',
+            'ElsaBabe': 'ElsaBabe',
+            'Fanreal': 'FANREAL',
+            'RZR': 'RZR Doll',
+            '蛍火日記': '蛍火日記',
+            '羊角社': '羊角社Doll',
+        }
+        for key, val in brand_map.items():
+            if key in product_name:
+                metadata['manufacturer'] = val
+                break
+
     if 'angeldoll.jp' in url:
         brand_patterns = [
             'Aotume Doll', 'WM Doll', 'Sino Doll', 'Art Doll',
@@ -433,6 +503,7 @@ def extract_metadata(soup, url, product_name):
             if re.search(pattern, product_name, re.IGNORECASE):
                 metadata['manufacturer'] = pattern
                 break
+
     if 'manufacturer' not in metadata:
         brand = extract_brand_from_name(product_name)
         if brand and brand not in EXCLUDED_BRANDS:
@@ -451,6 +522,7 @@ def extract_metadata(soup, url, product_name):
                     brand = extract_brand_from_name(h1.get_text(strip=True))
                     if brand and brand not in EXCLUDED_BRANDS:
                         metadata['manufacturer'] = brand
+
     if 'manufacturer' not in metadata:
         metadata['manufacturer'] = None
 
@@ -478,14 +550,6 @@ async def prepare_page(page):
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     })
 
-    async def route_handler(route):
-        if route.request.resource_type in ('image', 'media', 'font'):
-            await route.abort()
-        else:
-            await route.continue_()
-
-    await page.route('**/*', route_handler)
-
 
 async def scrape_one(page, url, processed_urls, max_retries=3):
     if url in processed_urls:
@@ -493,7 +557,11 @@ async def scrape_one(page, url, processed_urls, max_retries=3):
 
     print(f"  処理中: {url}")
     html = None
-    wait_until = 'networkidle' if 'yourdoll.jp' in url else 'domcontentloaded'
+
+    if 'dachiwife.com' in url:
+        wait_until = 'networkidle'
+    else:
+        wait_until = 'networkidle' if 'yourdoll.jp' in url else 'domcontentloaded'
 
     for attempt in range(max_retries):
         try:
@@ -504,6 +572,15 @@ async def scrape_one(page, url, processed_urls, max_retries=3):
                     return None
                 await asyncio.sleep(1.5 * (attempt + 1))
                 continue
+
+            if 'dachiwife.com' in url:
+                try:
+                    await page.wait_for_selector('#product-show-price', timeout=10000)
+                except:
+                    try:
+                        await page.wait_for_selector('.price-box', timeout=5000)
+                    except:
+                        pass
 
             for selector in [
                 'button:has-text("はい")',
@@ -547,16 +624,24 @@ async def scrape_one(page, url, processed_urls, max_retries=3):
         print(f"  ⏭️ スキップ（不要データ）: {product_name}")
         return None
 
-    price = "取得できず"
+    price = None
     price_elem = soup.find('div', class_='price') or soup.find('p', class_='price')
     if price_elem:
         price = extract_price(price_elem.get_text(strip=True))
-    if price == "取得できず":
+    if price is None:
         for text in soup.stripped_strings:
             if '円' in text and len(text) < 50:
                 price = extract_price(text)
-                if price != "取得できず":
+                if price is not None:
                     break
+    if price is None and 'dachiwife.com' in url:
+        price_span = soup.select_one('#product-show-price')
+        if price_span:
+            price_text = price_span.get_text(strip=True)
+            price = extract_price(price_text)
+
+    if price is None:
+        price = "取得できず"
 
     all_specs = []
     penis = []
@@ -677,6 +762,26 @@ async def scrape_one(page, url, processed_urls, max_retries=3):
         variant["大分類"] = determine_type(product_name, variant, html_text, soup)
         variant["サイト名"] = extract_site_name(url)
 
+        if '材質' in variant:
+            raw_material = variant['材質']
+            if raw_material:
+                cleaned = extract_material_from_text(raw_material)
+                if cleaned:
+                    variant['材質'] = cleaned
+                else:
+                    del variant['材質']
+        elif '素材' in variant:
+            raw_material = variant['素材']
+            if raw_material:
+                cleaned = extract_material_from_text(raw_material)
+                if cleaned:
+                    variant['材質'] = cleaned
+                    if '素材' in variant:
+                        del variant['素材']
+                else:
+                    if '素材' in variant:
+                        del variant['素材']
+
     try:
         with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -719,7 +824,7 @@ async def scrape_one(page, url, processed_urls, max_retries=3):
 
 
 # ============================================================
-# ★ 設定駆動型 URL収集関数（SITE_CONFIGS を使用）
+# ★ 修正版 collect_urls_by_config（domcontentloaded + 強制待機 + headless=False）
 # ============================================================
 def extract_whodoll_links(soup, domain):
     collected = set()
@@ -750,23 +855,35 @@ def extract_whodoll_links(soup, domain):
 
 async def collect_urls_by_config(site_name, config, max_pages=None):
     collected = set()
+    print(f"    🌐 ブラウザを起動中...")
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
+        # ★★★ 重要修正: headless=False に変更（Cloudflare対策） ★★★
+        browser = await p.chromium.launch(
+            headless=False,  # ブラウザウィンドウを表示（Cloudflare突破に必須）
+            slow_mo=100,     # 動作をやや遅くして安定性向上
+            args=['--disable-blink-features=AutomationControlled']
+        )
+        context = await browser.new_context(
+            viewport={'width': 1920, 'height': 1080},
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        )
         page = await context.new_page()
-        await page.set_extra_http_headers({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7',
-        })
-        async def route_handler(route):
-            if route.request.resource_type in ('image', 'media', 'font'):
-                await route.abort()
-            else:
-                await route.continue_()
-        await page.route('**/*', route_handler)
+
+        # ★ page.route による abort を完全に停止（Cloudflare対策）
+        # async def route_handler(route):
+        #     if route.request.resource_type in ('image', 'media', 'font'):
+        #         await route.abort()
+        #     else:
+        #         await route.continue_()
+        # await page.route('**/*', route_handler)
+
+        ymcart_sites = ['dolltime', 'bijindoll', 'ramondoll', 'rakuendoll', 'oldoll', 'sweetmate']
+        use_force_wait = site_name in ymcart_sites
 
         page_num = 1
         while True:
+            print(f"    📄 {site_name} ページ {page_num} を収集中...")
+
             if config.get("custom_handler") == "rosemary":
                 url = config["base_url"] if page_num == 1 else config["base_url"] + f"&page={page_num}"
             elif site_name == "whodoll":
@@ -781,30 +898,65 @@ async def collect_urls_by_config(site_name, config, max_pages=None):
                         url = url[:-1]
 
             try:
-                await page.goto(url, timeout=45000, wait_until='domcontentloaded')
+                await page.goto(url, timeout=60000, wait_until='domcontentloaded')
+                print(f"    🔍 ページ読み込み完了（domcontentloaded）")
+
+                if use_force_wait:
+                    print(f"    🔍 レンダリング完了を待機中...")
+                    try:
+                        await page.wait_for_selector('a[href*="/product-p"]', timeout=15000, state='visible')
+                        print(f"    ✅ 商品リンクを検出しました（wait_for_selector）")
+                    except Exception as e:
+                        print(f"    ⚠️ 商品リンク検出タイムアウトまたはエラー: {e}")
+
                 for selector in config.get("age_selectors", []):
                     try:
                         await page.click(selector, timeout=2000)
                     except:
                         pass
-                await page.wait_for_timeout(2000)
+
                 html = await page.content()
+                print(f"    🔍 HTML取得後のタイトル: {await page.title()}")
+                print(f"    🔍 HTMLサイズ: {len(html)} 文字")
+
             except Exception as e:
-                print(f"    ⚠️ {site_name} ページ {page_num} 読み込み失敗: {e}")
+                print(f"    ❌ {site_name} ページ {page_num} 読み込み失敗: {e}")
                 break
 
             soup = BeautifulSoup(html, 'html.parser')
+
+            title_tag = soup.find('title')
+            if title_tag:
+                print(f"    🔍 ページタイトル（soup）: {title_tag.text.strip()}")
+                if 'Checking your browser' in title_tag.text or 'Just a moment' in title_tag.text:
+                    print("    ⚠️ Cloudflare/DDOSガードが検出されました。リトライまたは待機時間延長が必要です。")
+
+            if not soup.find('body'):
+                print("    ⚠️ bodyタグが見つかりません。空のHTMLの可能性があります。")
+                break
+
+            error_urls = load_error_urls()
             if config.get("custom_handler") == "whodoll":
                 page_links = extract_whodoll_links(soup, config["domain"])
-                collected.update(page_links)
+                for link in page_links:
+                    if link not in error_urls:
+                        collected.add(link)
             else:
-                links = soup.select(config["link_selector"])
+                link_selectors = [config["link_selector"], 'div.product_item a.pic']
+                links = []
+                for sel in link_selectors:
+                    links = soup.select(sel)
+                    if links:
+                        print(f"    🔍 セレクタ '{sel}' で {len(links)} 件のリンクを検出")
+                        break
                 if not links:
                     all_links = soup.find_all('a', href=True)
                     links = [a for a in all_links if config["link_pattern"] in a.get('href', '')]
+                    print(f"    🔍 フォールバック全aタグから {len(links)} 件のリンクを検出")
+
                 for a in links:
                     href = a.get('href')
-                    if not href:
+                    if not href or not is_valid_url(href):
                         continue
                     if href.startswith('/'):
                         full_url = config["domain"] + href
@@ -813,20 +965,43 @@ async def collect_urls_by_config(site_name, config, max_pages=None):
                     else:
                         continue
                     full_url = re.sub(r'\?.*$', '', full_url)
-                    # ★ URLバリデーション（無効なURLを除外）
-                    if full_url and full_url.startswith('http') and not full_url.endswith(('.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg')):
-                        collected.add(full_url)
+                    if full_url.endswith(('.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp')):
+                        continue
+                    if full_url in error_urls:
+                        continue
+                    collected.add(full_url)
 
-            # 次へボタンのチェック
-            next_link = soup.select_one('a.next')
+            print(f"    📊 {site_name} ページ {page_num}: 現在 {len(collected)} 件のURLを収集済み")
+
+            # ★ 修正済み：サポートされない疑似クラスを削除
+            next_selectors = ['a.next', 'li.next a', '.pagination a[rel="next"]', 'a[title="次へ"]']
+            next_link = None
+            for sel in next_selectors:
+                next_link = soup.select_one(sel)
+                if next_link:
+                    print(f"    🔍 次へボタンを '{sel}' で検出")
+                    break
+            
+            # ★ テキストベースのフォールバック（BeautifulSoupは:has-textをサポートしないため）
             if not next_link:
+                for a in soup.find_all('a', href=True):
+                    txt = a.get_text(strip=True)
+                    if txt in ['次へ', '›', '>']:
+                        next_link = a
+                        print(f"    🔍 次へボタンをテキスト '{txt}' で検出（フォールバック）")
+                        break
+
+            if not next_link:
+                print(f"    ⏹️ {site_name}: 次へボタンがありません。最終ページと判断します。")
                 break
             page_num += 1
             if max_pages and page_num > max_pages:
+                print(f"    ⏹️ {site_name}: 最大ページ数 {max_pages} に達しました。")
                 break
             await asyncio.sleep(1)
 
         await browser.close()
+    print(f"    ✅ {site_name}: 合計 {len(collected)} 件のURLを収集しました（{page_num}ページ分）")
     return collected
 
 
@@ -840,10 +1015,6 @@ async def main():
     print(f"🕒 開始時刻: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
-    print("\n📡 ステップ1: 商品URLを収集します...")
-    all_urls = set()
-
-    # 有効なサイト名のリスト
     available_sites = list(SITE_CONFIGS.keys())
 
     if SCRAPE_TARGET == 'all':
@@ -855,48 +1026,59 @@ async def main():
         if site_name not in SITE_CONFIGS:
             print(f"⚠️ 不明なサイト: {site_name}（スキップします）")
             continue
-        print(f"\n  [{site_name}]")
-        urls = await collect_urls_by_config(site_name, SITE_CONFIGS[site_name], max_pages=MAX_PAGES_PER_CATEGORY)
-        print(f"  ✅ {site_name}: {len(urls)} 件のURLを収集")
-        all_urls.update(urls)
 
-    print(f"\n📊 合計 {len(all_urls)} 件のURLを収集しました。")
+        print(f"\n{'='*60}")
+        print(f"🔍 [{site_name}] のURL収集を開始します...")
+        print(f"{'='*60}")
 
-    print("\n📋 ステップ2: 未処理のURLをフィルタリングします...")
-    processed = load_processed_urls()
-    error_urls = load_error_urls()
-    new_urls = [url for url in all_urls if url not in processed and url not in error_urls]
-    print(f"📊 既処理: {len(processed)} 件, エラー履歴: {len(error_urls)} 件, 新規: {len(new_urls)} 件")
-
-    if not new_urls:
-        print("✅ 新規URLはありません。処理を終了します。")
-        return
-
-    print("\n🔄 ステップ3: スクレイピングを実行します...")
-    success_count = 0
-    error_count = 0
-
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
-        page = await context.new_page()
-        await prepare_page(page)
         try:
-            for i, url in enumerate(new_urls, 1):
-                print(f"\n--- {i}/{len(new_urls)} ---")
-                result = await scrape_one(page, url, processed)
-                if result:
-                    success_count += 1
-                else:
-                    error_count += 1
-                await asyncio.sleep(1.5)
-        finally:
-            await browser.close()
+            urls = await collect_urls_by_config(site_name, SITE_CONFIGS[site_name], max_pages=MAX_PAGES_PER_CATEGORY)
+            print(f"  ✅ {site_name}: {len(urls)} 件のURLを収集")
+        except Exception as e:
+            print(f"  ❌ {site_name}: 収集中にエラーが発生しました: {e}")
+            continue
+
+        if not urls:
+            print(f"  ⏭️ {site_name}: URLが0件のためスキップします")
+            continue
+
+        processed = load_processed_urls()
+        error_urls = load_error_urls()
+        new_urls = [url for url in urls if url not in processed and url not in error_urls]
+        print(f"  📊 既処理: {len(processed)} 件, エラー履歴: {len(error_urls)} 件, 新規: {len(new_urls)} 件")
+
+        if not new_urls:
+            print(f"  ✅ {site_name}: 新規URLはありません。次のサイトに進みます。")
+            continue
+
+        print(f"  🔄 {site_name}: スクレイピングを実行します（{len(new_urls)}件）...")
+
+        success_count = 0
+        error_count = 0
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context()
+            page = await context.new_page()
+            await prepare_page(page)
+
+            try:
+                for i, url in enumerate(new_urls, 1):
+                    print(f"\n  --- {i}/{len(new_urls)} ---")
+                    result = await scrape_one(page, url, processed)
+                    if result:
+                        success_count += 1
+                    else:
+                        error_count += 1
+                    await asyncio.sleep(1.5)
+            finally:
+                await browser.close()
+
+        print(f"  ✅ {site_name}: 完了（成功 {success_count} 件, エラー {error_count} 件）")
 
     elapsed = time.time() - start_time
     print("\n" + "=" * 60)
-    print(f"✅ スクレイピングが完了しました！")
-    print(f"📊 処理結果: 成功 {success_count} 件, エラー {error_count} 件")
+    print(f"✅ 全サイトのスクレイピングが完了しました！")
     print(f"🕒 経過時間: {elapsed:.1f} 秒 ({elapsed/60:.1f} 分)")
     print("=" * 60)
 

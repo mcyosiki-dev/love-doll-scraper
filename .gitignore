@@ -1,7 +1,6 @@
 venv/ 
 __pycache__/ 
 *.pyc 
-*.db 
 all_data.json 
 debug_*.py 
 debug_*.html 

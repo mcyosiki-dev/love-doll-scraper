@@ -18,14 +18,51 @@ CUP_NORMALIZE = {
     'M以上': 'M以上', 'M': 'M以上',
 }
 
-# 材質マッピング（既存）
+# ★ 材質マッピング（エラストマー → TPE を追加） ★
 MATERIAL_MAPPING = {
     'シリコン': 'シリコン',
+    'シリコン製': 'シリコン',
     'シリコン+TPE': 'シリコン+TPE',
-    # 必要に応じて追加
+    'シリコン/TPE': 'シリコン/TPE',
+    'TPE': 'TPE',
+    'TPE製': 'TPE',
+    'エラストマー': 'TPE',          # ← 追加
+    'エラストマー製': 'TPE',        # ← 追加
+    'PVC': 'PVC',
+    'PVC+シリコン': 'PVC+シリコン',
+    'STPE': 'STPE',
+    'S-TPE': 'S-TPE',
+    'ビニール': 'ビニール',
+    'ソフビ': 'ソフビ',
+    'フルシリコン': 'フルシリコン',
+    'シリコンラブドール': 'シリコン',
+    'TPEラブドール': 'TPE',
+    'ビニールヘッド＋TPEボディ': 'ビニール+TPE',
+    'PVCヘッド＋TPEボディ': 'PVC+TPE',
+    'シリコンヘッド＋TPEボディ': 'シリコン+TPE',
+    'シリコン頭部＆TPE身体': 'シリコン+TPE',
 }
 
-EXCLUDED_MATERIALS = ['身長']
+EXCLUDED_MATERIALS = ['身長', '体重', 'cm', 'kg', 'カップ']
+
+def normalize_material(value):
+    if not value:
+        return None
+    # 30文字以上の長文は除外
+    if len(value) > 30:
+        return None
+    # マッピングに存在する場合はそのまま
+    if value in MATERIAL_MAPPING:
+        return MATERIAL_MAPPING[value]
+    # 部分一致でマッピング（例：エラストマー を含む → TPE）
+    for key, mapped in MATERIAL_MAPPING.items():
+        if key in value:
+            return mapped
+    # 除外キーワードを含むものは除外
+    for ex in EXCLUDED_MATERIALS:
+        if ex in value:
+            return None
+    return value
 
 with open('all_data.json', 'r', encoding='utf-8') as f:
     products = json.load(f)
@@ -36,7 +73,6 @@ cursor = conn.cursor()
 cursor.execute('DROP TABLE IF EXISTS specs')
 cursor.execute('DROP TABLE IF EXISTS products')
 
-# ★ 2026-07-09 カラム追加：manufacturer, site_product_id（image_urlは非収集）
 cursor.execute('''
     CREATE TABLE products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,13 +115,14 @@ for product in products:
     for variant in variants:
         category = variant.get('大分類', '不明')
 
-        # 材質正規化
+        # 材質を正規化（エラストマー → TPE もここで処理）
         if '材質' in variant:
             raw_material = variant['材質']
-            if raw_material in MATERIAL_MAPPING:
-                variant['材質'] = MATERIAL_MAPPING[raw_material]
-            if variant['材質'] in EXCLUDED_MATERIALS:
+            normalized = normalize_material(raw_material)
+            if normalized is None:
                 del variant['材質']
+            else:
+                variant['材質'] = normalized
 
         # カップ数正規化
         if 'カップ数' in variant:

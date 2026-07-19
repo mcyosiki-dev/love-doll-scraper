@@ -178,3 +178,35 @@ Call log:
 Call log:
   - navigating to "https://yourdoll.jp/product/sea001-lovedoll/", waiting until "networkidle"
 
+2026-07-12 00:24:00 | https://www.dolltime.jp/product-p1040909.html | 試行 1 エラー: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to "https://www.dolltime.jp/product-p1040909.html", waiting until "domcontentloaded"
+
+2026-07-13 05:23:29 | https://www.bijindoll.com/product-p28437467.html | 試行 1 エラー: Page.goto: net::ERR_INTERNET_DISCONNECTED at https://www.bijindoll.com/product-p28437467.html
+Call log:
+  - navigating to "https://www.bijindoll.com/product-p28437467.html", waiting until "domcontentloaded"
+
+2026-07-13 05:24:15 | https://www.bijindoll.com/product-p28437467.html | 試行 2 エラー: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to "https://www.bijindoll.com/product-p28437467.html", waiting until "domcontentloaded"
+
+2026-07-14 18:33:29 | https://www.rakuendoll.jp/product-p21176208.html | 試行 1 エラー: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to "https://www.rakuendoll.jp/product-p21176208.html", waiting until "domcontentloaded"
+
+2026-07-15 14:46:46 | https://www.oldoll.com/product-p2143720.html | 試行 1 エラー: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to "https://www.oldoll.com/product-p2143720.html", waiting until "domcontentloaded"
+
+2026-07-15 16:14:39 | https://www.oldoll.com/product-p1874374.html | 試行 1 エラー: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to "https://www.oldoll.com/product-p1874374.html", waiting until "domcontentloaded"
+
+2026-07-15 17:42:38 | https://www.oldoll.com/product-p1523179.html | 試行 1 エラー: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to "https://www.oldoll.com/product-p1523179.html", waiting until "domcontentloaded"
+
+2026-07-15 20:36:35 | https://www.oldoll.com/product-p1617726.html | 試行 1 エラー: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to "https://www.oldoll.com/product-p1617726.html", waiting until "domcontentloaded"
+
