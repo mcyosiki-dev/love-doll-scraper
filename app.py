@@ -202,8 +202,6 @@ def search():
     conn = get_db_connection()
     c = conn.cursor()
 
-    # ========== ★★★ 修正：サブクエリ方式で確実にCOUNTを取得 ★★★ ==========
-    # 1. ベースクエリ（WHERE/GROUP BY/HAVING を含む、ORDER BY/LIMIT は含まない）
     base_query = '''
         SELECT
             p.id, p.name, p.price, p.url, p.category,
@@ -227,7 +225,6 @@ def search():
     '''
     params = []
 
-    # 2. WHERE句の構築
     if keyword:
         c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products_fts'")
         if c.fetchone():
@@ -290,10 +287,8 @@ def search():
         base_query += f' AND p.manufacturer IN ({placeholders})'
         params.extend(mfg_list)
 
-    # 3. GROUP BY
     base_query += ' GROUP BY p.id'
 
-    # 4. HAVING句
     having_conditions = []
     if selected_cups:
         cup_list = selected_cups.split(',')
@@ -329,18 +324,8 @@ def search():
     if having_conditions:
         base_query += ' HAVING ' + ' AND '.join(having_conditions)
 
-    # ========== ★★★ ここがポイント：COUNT用とメイン用でクエリを分ける ★★★ ==========
-    # 5. COUNTクエリ（base_queryをサブクエリとしてラップ）
-    # base_query には ORDER BY が含まれていないので、そのままサブクエリにできる
     count_query = f"SELECT COUNT(*) AS total FROM ({base_query}) AS sub"
-    count_params = params[:]  # params をコピー（ORDER BY/LIMIT はまだない）
-
-    print("=" * 60)
-    print("=== COUNT QUERY (サブクエリ方式) ===")
-    print(count_query)
-    print("=== COUNT PARAMS ===")
-    print(count_params)
-    print("=" * 60)
+    count_params = params[:]
 
     try:
         c.execute(count_query, count_params)
@@ -349,7 +334,6 @@ def search():
         print(f"⚠️ カウントクエリエラー: {e}")
         total = 0
 
-    # 6. メインクエリ（ORDER BY + LIMIT/OFFSET を追加）
     sort_map = {
         'price_asc': ('p.price_int ASC', 'price'),
         'price_desc': ('p.price_int DESC', 'price'),
@@ -379,6 +363,12 @@ def search():
     for row in results:
         row_dict = dict(row)
         row_dict['site_name'] = extract_site_name(row['url'])
+        # ★★★ 金額にカンマを追加（3桁区切り）★★★
+        price_int = row_dict.get('price_int')
+        if price_int is not None:
+            row_dict['price_formatted'] = f"{price_int:,}"
+        else:
+            row_dict['price_formatted'] = row_dict.get('price', '')
         results_with_site.append(row_dict)
 
     def get_min_max(col_name):
